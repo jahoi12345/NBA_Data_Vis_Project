@@ -1,0 +1,37 @@
+/* Hide all ArcGIS UI elements - scoped to the component container */
+div[style*="width"][style*="height"] .esri-ui,
+div[style*="width"][style*="height"] .esri-ui-inner-container,
+div[style*="width"][style*="height"] .esri-ui-corner-container,
+div[style*="width"][style*="height"] .esri-ui-top-left,
+div[style*="width"][style*="height"] .esri-ui-top-right,
+div[style*="width"][style*="height"] .esri-ui-bottom-left,
+div[style*="width"][style*="height"] .esri-ui-bottom-right,
+div[style*="width"][style*="height"] .esri-ui-manual-container,
+div[style*="width"][style*="height"] .esri-attribution,
+div[style*="width"][style*="height"] .esri-attribution__sources,
+div[style*="width"][style*="height"] .esri-attribution__powered-by,
+div[style*="width"][style*="height"] [class*="esri-attribution"],
+div[style*="width"][style*="height"] [class*="esri-ui"],
+.esri-ui,
+.esri-ui-inner-container,
+.esri-ui-corner-container,
+.esri-ui-top-left,
+.esri-ui-top-right,
+.esri-ui-bottom-left,
+.esri-ui-bottom-right,
+.esri-ui-manual-container,
+.esri-attribution,
+.esri-attribution__sources,
+.esri-attribution__powered-by,
+[class*="esri-attribution"],
+[class*="esri-ui"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide any user storage elements */
+.esri-view-user-storage {
+  display: none !important;
+  visibility: hidden !important;
+}
+

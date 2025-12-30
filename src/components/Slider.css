@@ -1,0 +1,89 @@
+.react-aria-Slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(calc(100% - 12px), 600px);
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #333;
+  background: white;
+  padding: 8px 20px;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.react-aria-Label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 2px;
+  text-align: center;
+  width: 100%;
+}
+
+.react-aria-SliderTrack {
+  position: relative;
+  height: 20px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.slider-root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  touch-action: none;
+  width: 100%;
+  height: 20px;
+}
+
+.slider-track {
+  background-color: #ddd;
+  position: relative;
+  flex-grow: 1;
+  border-radius: 9999px;
+  height: 6px;
+}
+
+.slider-range {
+  position: absolute;
+  background-color: #3b82f6;
+  border-radius: 9999px;
+  height: 100%;
+}
+
+.slider-thumb {
+  display: block;
+  width: 18px;
+  height: 18px;
+  background-color: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  cursor: pointer;
+}
+
+.slider-thumb:hover {
+  background-color: #eff6ff;
+  border-color: #2563eb;
+}
+
+.slider-thumb:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.slider-root[data-disabled] .slider-track {
+  background-color: #e5e7eb;
+}
+
+.slider-root[data-disabled] .slider-range {
+  background-color: #9ca3af;
+}
+
+.slider-root[data-disabled] .slider-thumb {
+  border-color: #9ca3af;
+  cursor: not-allowed;
+}
+
