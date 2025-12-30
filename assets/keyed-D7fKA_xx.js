@@ -1,1 +1,0 @@
-import{e as s,d as i,A as o}from"./modeUtils-RVJH-Hyp.js";import{p as n}from"./ref-D5U7yq6r.js";const m=s(class extends i{constructor(){super(...arguments),this.key=o}render(r,e){return this.key=r,e}update(r,[e,t]){return e!==this.key&&(n(r),this.key=e),t}});export{m as i};
