@@ -1,1 +1,0 @@
-import{o as n}from"./projectionUtils-BGH_5_I3-BySNUA-B.js";function s(o,r,t){if(!t?.features||!t.hasZ)return;const e=n(t.geometryType,r,o.outSpatialReference);if(e!=null)for(const f of t.features)e(f.geometry)}export{s as a};

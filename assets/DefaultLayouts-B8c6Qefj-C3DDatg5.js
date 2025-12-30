@@ -1,0 +1,1 @@
+import{p as e}from"./InterleavedLayout-B7roQAzV-CdGz7mlm.js";const f=e().vec3f("position").freeze(),v=e().vec3f("position").vec2f16("uv0").freeze(),c=e().vec3f("position").vec4u8("color").freeze(),i=e().vec3f("position").vec2f("uv0").freeze(),r=e().vec3f("position").vec2f("uv0").vec4u8("olidColor").freeze();export{c,f,i,r,v};

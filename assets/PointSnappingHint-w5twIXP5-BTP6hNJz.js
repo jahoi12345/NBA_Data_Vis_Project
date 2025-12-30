@@ -1,0 +1,1 @@
+import{c as e}from"./vec32-CewSdTn3-VRto2OOh.js";import{s as i}from"./euclideanLengthMeasurementUtils-CpHh36Dt-Ct4GxOU1.js";class t extends i{constructor(s,o,r){super(o,r),this.point=s}equals(s){return s instanceof t&&e(this.point,s.point)}}export{t as s};

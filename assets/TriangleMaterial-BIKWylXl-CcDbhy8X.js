@@ -1,1 +1,0 @@
-import{u as n,cx as i,cy as o}from"./Texture-CFNZjV2R-lGBztxVp.js";class f extends n{intersect(s,t,r,e,a,c){return i(s,r,e,a,void 0,c)}intersectDraped(s,t,r,e){return o(r[0],r[1],s,e)}}export{f as m};

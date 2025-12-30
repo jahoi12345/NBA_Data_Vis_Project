@@ -1,0 +1,1 @@
+import{K as n}from"./index-BydpoIod-BoRnEAlL.js";const s=()=>n((t,o)=>{const c=new Set;return o.onDisconnected(()=>{c.forEach(e=>e.cancel())}),{add:e=>{[e].flat().forEach(r=>c.add(r))},resources:c}});export{s};
