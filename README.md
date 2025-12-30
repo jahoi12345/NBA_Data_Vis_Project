@@ -8,7 +8,7 @@ An interactive data visualization project exploring NBA player performance trend
 
 **[View the live application →](https://jahoi12345.github.io/NBA_Data_Vis_Project/)**
 
-** Recommend Waiting on the Title Page for 20 Seconds before Scrolling**
+**Recommend Waiting on the Title Page for 20 Seconds before Scrolling**
 
 ## Features
 
