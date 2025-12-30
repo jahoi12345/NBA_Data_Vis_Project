@@ -608,14 +608,14 @@ function App() {
       {/* ===============================
           HERO SECTION
       =============================== */}
-      <section className="h-screen w-full flex items-center justify-center px-8 bg-white">
+      <section className="h-screen w-full flex items-center justify-center px-8 bg-white pb-16 md:pb-24">
         <div className="max-w-4xl text-center">
           <img src={nbaLogo} alt="NBA" className="h-96 md:h-[30rem] mx-auto mb-6" style={{ backgroundColor: 'white' }} />
           <h1 className="text-6xl md:text-7xl font-bold mb-6">
             Have NBA Players Gotten Better?
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto">
-            Scroll to explore how shooting accuracy has evolved across NBA history
+            Scroll to explore how NBA players and the game have evolved over time
           </p>
         </div>
       </section>
@@ -625,16 +625,16 @@ function App() {
       =============================== */}
       <section
         ref={lollipopSectionRef}
-        className="relative min-h-screen"
+        className="relative min-h-screen pt-16 md:pt-24"
       >
         {/* Sticky chart */}
         <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-semibold mb-2">
+          <div className="w-full px-8 py-8">
+            <div className="text-center mb-12 md:mb-16">
+              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
                 Elite Players Per Season
               </h2>
-              <p className="text-lg text-gray-600 mb-4">
+              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
                 Number of players averaging &gt;25 pts, &gt;5 reb, and &gt;5 ast per season (Regular Season only)
               </p>
             </div>
@@ -644,7 +644,7 @@ function App() {
                 Processing player statistics...
               </div>
             ) : (
-              <div className="flex justify-center">
+              <div className="flex justify-center mt-4 md:mt-6">
                 <LollipopChart
                   data={playerStatsData}
                   width={Math.min(window.innerWidth - 80, 1400)}
@@ -669,7 +669,7 @@ function App() {
             The Anomaly
           </h3>
           <p className="text-gray-700 leading-relaxed">
-            After 2017, a significant number of players began averaging 25+ points, 5+ rebounds, and 5+ assists per season—something 
+            After 2017, a significant number of players began averaging 25+ points, 5+ rebounds, and 5+ assists per season, something 
             historically unprecedented. This surge raises a fundamental question: are we witnessing stat inflation, or genuine evolution?
           </p>
         </FloatingTextBox>
@@ -680,17 +680,17 @@ function App() {
       =============================== */}
       <section
         ref={dualAxisSectionRef}
-        className="relative"
+        className="relative pt-16 md:pt-24"
         style={{ minHeight: '550vh' }} // 100vh (sticky element) + 450vh (spacer) = 550vh total
       >
         {/* Sticky chart */}
         <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-semibold mb-2">
+          <div className="w-full px-8 py-8">
+            <div className="text-center mb-12 md:mb-16">
+              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
                 Pace and Offensive Efficiency
               </h2>
-              <p className="text-lg text-gray-600 mb-4">
+              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
                 NBA pace (possessions per game) and points per 100 possessions over time
               </p>
             </div>
@@ -700,7 +700,7 @@ function App() {
                 Loading chart data…
               </div>
             ) : (
-              <div className="flex justify-center">
+              <div className="flex justify-center mt-4 md:mt-6">
               <DualAxisChart
                 data={data}
                 width={Math.min(window.innerWidth - 80, 1400)}
@@ -733,7 +733,7 @@ function App() {
             The Pace Theory
           </h3>
           <p className="text-gray-700 leading-relaxed">
-            Pace is up—there are more possessions per game than in previous eras. But pace alone doesn't explain the efficiency jump. 
+            Pace is up - there are more possessions per game than in previous eras. But pace alone doesn't explain the efficiency jump. 
             Teams aren't just playing faster; they're playing smarter, solving the geometry of the game in ways that previous generations couldn't.
           </p>
         </FloatingTextBox>
@@ -795,17 +795,17 @@ function App() {
       =============================== */}
       <section
         ref={chartSectionRef}
-        className="relative min-h-screen"
+        className="relative min-h-screen pt-16 md:pt-24"
       >
         {/* Sticky chart */}
         <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-semibold mb-2">
+          <div className="w-full px-8 py-8">
+            <div className="text-center mb-12 md:mb-16">
+              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
                 League Average Shooting Percentages
               </h2>
-              <p className="text-lg text-gray-600">
-                NBA FT%, FG%, and TS% by season (1979–80 onward)
+              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
+                NBA FT%, FG%, and TS% by season (1979-80 onward)
               </p>
             </div>
 
@@ -814,7 +814,7 @@ function App() {
                 Loading chart data…
               </div>
             ) : (
-              <div className="flex justify-center">
+              <div className="flex justify-center mt-4 md:mt-6">
                 <FTPercentChart
                   data={data}
                   width={Math.min(window.innerWidth - 80, 1400)}
@@ -841,7 +841,7 @@ function App() {
             The Rules Theory
           </h3>
           <p className="text-gray-700 leading-relaxed">
-            Rules have changed to favor offense—hand-checking restrictions, defensive three seconds, and other modifications. 
+            Rules have changed to favor offense - hand-checking restrictions, defensive three seconds, and other modifications. 
             But while rules create the conditions for higher scoring, they don't explain why players are hitting shots at historically 
             unprecedented rates. The math has changed, and players have adapted.
           </p>
@@ -854,27 +854,29 @@ function App() {
       {showSeparated && (
         <section
           ref={separatedSectionRef}
-          className="relative min-h-screen"
+          className="relative min-h-screen pt-16 md:pt-24"
         >
           {/* Sticky chart */}
           <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-            <div className="w-full px-8">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-semibold mb-2">
+            <div className="w-full px-8 py-8">
+              <div className="text-center mb-12 md:mb-16">
+                <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
                   Individual Shooting Metrics
                 </h2>
-                <p className="text-lg text-gray-600">
-                  Each metric shown separately (1999–present)
+                <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
+                  Each metric shown separately (1999-present)
                 </p>
               </div>
 
               {!loading && (
-                <SeparatedCharts
-                  data={data}
-                  width={Math.min(window.innerWidth - 80, 1400)}
-                  height={500}
-                  isVisible={separatedVisible}
-                />
+                <div className="flex justify-center mt-4 md:mt-6">
+                  <SeparatedCharts
+                    data={data}
+                    width={Math.min(window.innerWidth - 80, 1400)}
+                    height={500}
+                    isVisible={separatedVisible}
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -893,7 +895,7 @@ function App() {
             </h3>
             <p className="text-gray-700 leading-relaxed">
               Ever since 2000, we see each of these stats have increased. Players have genuinely improved their fundamental shooting 
-              skills across the board—free throws, field goals, and overall efficiency. But this isn't just about individual skill; 
+              skills across the board - free throws, field goals, and overall efficiency. But this isn't just about individual skill; 
               it's about how the game itself has been optimized through analytics and strategic innovation.
             </p>
           </FloatingTextBox>
@@ -905,17 +907,17 @@ function App() {
       =============================== */}
       <section
         ref={leagueUsageSectionRef}
-        className="relative"
+        className="relative pt-16 md:pt-24"
         style={{ minHeight: '450vh' }} // 150vh initial + 150vh zoom out + 150vh post-2010 = 450vh
       >
         {/* Sticky chart */}
         <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-semibold mb-2">
+          <div className="w-full px-8 py-8">
+            <div className="text-center mb-12 md:mb-16">
+              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
                 League Average Usage of Highest Usage Players
               </h2>
-              <p className="text-lg text-gray-600 mb-4">
+              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
                 Average usage percentage of the highest usage player per team, per season
               </p>
             </div>
@@ -925,7 +927,7 @@ function App() {
                 Loading usage data...
               </div>
             ) : (
-              <div className="flex justify-center">
+              <div className="flex justify-center mt-4 md:mt-6">
                 <LeagueAverageUsageChart
                   data={usageData.leagueAverage}
                   width={Math.min(window.innerWidth - 80, 1400)}
@@ -953,9 +955,9 @@ function App() {
             The Heliocentric Theory
           </h3>
           <p className="text-gray-700 leading-relaxed">
-            Star players are handling more offensive load than ever—heliocentric offenses built around high-usage superstars. 
+            Star players are handling more offensive load than ever - heliocentric offenses built around high-usage superstars. 
             But here's the thing: role players are also scoring more. The entire league has become more efficient, not just the stars. 
-            This suggests something deeper than just better players—it's a systemic shift in how the game is played.
+            This suggests something deeper than just better players - it's a systemic shift in how the game is played.
           </p>
         </FloatingTextBox>
 
@@ -999,20 +1001,20 @@ function App() {
       {/* ===============================
           SHOT HEATMAP SECTION
       =============================== */}
-      <section ref={shotHeatmapSectionRef} className="relative min-h-screen">
+      <section ref={shotHeatmapSectionRef} className="relative min-h-screen pt-16 md:pt-24">
         {/* Sticky chart */}
         <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-semibold mb-2">
+          <div className="w-full px-8 py-8">
+            <div className="text-center mb-12 md:mb-16">
+              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
                 Evolution of NBA Shot Selection
               </h2>
-              <p className="text-lg text-gray-600 mb-4">
+              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
                 Explore how shot locations have changed across two decades (2004-2024). Use the slider to see the shift from post-up dominance to the three-point revolution.
               </p>
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center mt-4 md:mt-6">
               {shotDataLoading ? (
                 <div className="flex items-center justify-center" style={{ width: Math.min(window.innerWidth - 80, 1000), height: 600 }}>
                   <p className="text-gray-600">Loading shot data...</p>
@@ -1043,7 +1045,7 @@ function App() {
             Solving the Geometry
           </h3>
           <p className="text-gray-700 leading-relaxed">
-            The shift from mid-range to three-pointers and shots at the rim isn't just a stylistic change—it's the result of 
+            The shift from mid-range to three-pointers and shots at the rim isn't just a stylistic change - it's the result of 
             solving the geometry of basketball. Analytics revealed that certain shots are mathematically superior, and teams 
             have optimized their offense accordingly. The game has been solved, and players have adapted to this new reality.
           </p>
@@ -1055,16 +1057,16 @@ function App() {
       =============================== */}
       <section
         ref={normalizedOffenseSectionRef}
-        className="relative min-h-screen"
+        className="relative min-h-screen pt-16 md:pt-24"
       >
         {/* Sticky chart */}
         <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-semibold mb-2">
+          <div className="w-full px-8 py-8">
+            <div className="text-center mb-12 md:mb-16">
+              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
                 How Offense Has Changed, Relative to Itself
               </h2>
-              <p className="text-lg text-gray-600 mb-4">
+              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
                 How offensive performance has evolved over time
               </p>
             </div>
@@ -1074,7 +1076,7 @@ function App() {
                 Loading chart data…
               </div>
             ) : (
-              <div className="flex justify-center">
+              <div className="flex justify-center mt-4 md:mt-6">
                 <NormalizedOffenseChart
                   data={data}
                   width={Math.min(window.innerWidth - 80, 1400)}
@@ -1100,8 +1102,8 @@ function App() {
           </h3>
           <p className="text-gray-700 leading-relaxed">
             Are the numbers we see today a symptom of stat inflation? Or have players simply gotten better? It's both. 
-            The math has changed the game—analytics solved the geometry, spacing created new opportunities, and strategic 
-            innovation optimized offense. But players have changed too—they've adapted, improved their skills, and learned to 
+            The math has changed the game - analytics solved the geometry, spacing created new opportunities, and strategic 
+            innovation optimized offense. But players have changed too - they've adapted, improved their skills, and learned to 
             thrive in this new system. The game evolved, and so did the players.
           </p>
         </FloatingTextBox>
@@ -1110,13 +1112,13 @@ function App() {
       {/* ===============================
           FINAL HERO SECTION
       =============================== */}
-      <section className="h-screen w-full flex items-center justify-center px-8 bg-white">
+      <section className="h-screen w-full flex items-center justify-center px-8 bg-white pt-16 md:pt-24 pb-16 md:pb-24">
         <div className="max-w-4xl text-center">
           <h1 className="text-6xl md:text-7xl font-bold mb-6">
             The Evolution Continues
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto mb-8">
-            NBA players have indeed gotten better, but not just in raw skill—they've adapted to a game that demands more versatility, efficiency, and strategic thinking than ever before.
+            NBA players have indeed gotten better, but not just in raw skill - they've adapted to a game that demands more versatility, efficiency, and strategic thinking than ever before.
           </p>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto">
             The data tells a story of continuous improvement, driven by analytics, training, and an ever-evolving understanding of what makes basketball great.
