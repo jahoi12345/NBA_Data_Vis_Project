@@ -1,1 +1,0 @@
-import{e as s,d as i,A as o}from"./modeUtils-DxPEKdPB.js";import{p as n}from"./ref-DUlP7N0c.js";const m=s(class extends i{constructor(){super(...arguments),this.key=o}render(r,e){return this.key=r,e}update(r,[e,t]){return e!==this.key&&(n(r),this.key=e),t}});export{m as i};
