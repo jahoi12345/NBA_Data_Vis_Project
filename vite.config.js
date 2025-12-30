@@ -11,6 +11,12 @@ export default defineConfig({
   build: {
     target: 'esnext',
     rollupOptions: {
+      output: {
+        // Ensure assets don't start with underscore (GitHub Pages ignores them)
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
       external: []
     }
   }
