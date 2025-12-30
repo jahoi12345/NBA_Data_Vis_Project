@@ -1,1 +1,0 @@
-import{f,x as i}from"./jsonUtils-CmpazY1u-6pDLj5sx.js";function u(e){return{geometryType:f(e[0]),geometries:e.map(t=>t.toJSON())}}function c(e,t,n){const o=i(t);return e.map(m=>{const r=o.fromJSON(m);return r.spatialReference=n,r})}export{u as i,c as u};

@@ -1,1 +1,0 @@
-function n(){return[1,0,0,1,0,0]}function l(e){return[e[0],e[1],e[2],e[3],e[4],e[5]]}function f(e,r,o,t,u,c){return[e,r,o,t,u,c]}const i=n();Object.freeze(Object.defineProperty({__proto__:null,IDENTITY:i,clone:l,create:n,fromValues:f},Symbol.toStringTag,{value:"Module"}));export{l,n};

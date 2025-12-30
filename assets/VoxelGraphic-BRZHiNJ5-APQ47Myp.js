@@ -1,1 +1,0 @@
-import{Y as s,H as t,G as o}from"./jsonMap-Bs3hmeCU-Cusd0Fmz.js";import{s as l}from"./Graphic-DgGzDmqW-d1CNicxz.js";let e=class extends l{constructor(r){super(r),this.gpuResult=null}};s([t({constructOnly:!0,clonable:"reference"})],e.prototype,"gpuResult",void 0),e=s([o("esri.views.3d.layers.VoxelGraphic")],e);export{e};

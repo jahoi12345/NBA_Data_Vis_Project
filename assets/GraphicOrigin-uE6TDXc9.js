@@ -1,0 +1,1 @@
+import{_ as i,a as t}from"./jsonMap-Bs3hmeCU.js";const r=Symbol("getSliceableSymbol");function s(o){return typeof o=="object"&&!!o&&r in o}function c(o){return s(o)?o[r]:void 0}let e=class{};e=i([t("esri.graphic.GraphicOrigin")],e);export{c as e,r as o,e as s};

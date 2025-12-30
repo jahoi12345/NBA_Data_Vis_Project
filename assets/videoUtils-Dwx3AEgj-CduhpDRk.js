@@ -1,1 +1,0 @@
-import{bL as n}from"./jsonMap-Bs3hmeCU-Cusd0Fmz.js";function i(r,e){return new Promise((t,o)=>{r.readyState>=HTMLMediaElement.HAVE_CURRENT_DATA?t():(e(n(r,"canplay",t)),e(n(r,"error",o)))})}export{i};

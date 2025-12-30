@@ -1,1 +1,0 @@
-function u(n,e,o){if(!o||e==null)return null;if(!n)return r(e,o);const t=n.get(o);return t?e[t.name]:null}function r(n,e){const o=e.toLowerCase();for(const t in n)if(t.toLowerCase()===o)return n[t];return null}export{u};
