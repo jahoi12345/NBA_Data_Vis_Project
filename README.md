@@ -8,6 +8,8 @@ An interactive data visualization project exploring NBA player performance trend
 
 **[View the live application →](https://jahoi12345.github.io/NBA_Data_Vis_Project/)**
 
+** Recommend Waiting on the Title Page for 20 Seconds before Scrolling**
+
 ## Features
 
 - **Season-by-Season Analysis**: Explore NBA data from 2004 to 2024
