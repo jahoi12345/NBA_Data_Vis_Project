@@ -72,7 +72,6 @@ nba_players_viz/
 │   └── utils/             # Utility functions
 ├── per_season_shots/      # Raw shot data (CSV)
 ├── per_season_shots_grid/ # Processed shot grids (JSON)
-├── per_season_shots_hexbins/ # Hexbin visualizations (GeoJSON)
 ├── dist/                  # Production build output
 └── public/                # Public assets
 ```
