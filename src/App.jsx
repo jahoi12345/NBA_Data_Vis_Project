@@ -78,6 +78,9 @@ function App() {
      LOAD DATA
   --------------------------------*/
   useEffect(() => {
+    // Debug: Log BASE_URL to verify it's set correctly
+    console.log('BASE_URL:', import.meta.env.BASE_URL);
+    
     async function loadData() {
       const parsed = await parseNBAData();
       setData(parsed);
