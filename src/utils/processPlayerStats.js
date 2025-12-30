@@ -7,7 +7,7 @@
 export async function processPlayerStatistics() {
   try {
     console.log('Loading PlayerStatistics.csv...');
-    const response = await fetch('/PlayerStatistics.csv');
+    const response = await fetch(`${import.meta.env.BASE_URL}PlayerStatistics.csv`);
     if (!response.ok) {
       throw new Error(`Failed to fetch CSV: ${response.status}`);
     }

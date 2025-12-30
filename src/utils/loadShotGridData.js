@@ -17,7 +17,7 @@ export async function loadShotGridData(seasons = null) {
     for (const year of seasonsToLoad) {
       try {
         const filename = `NBA_${year}_Shots_Grid.json`;
-        const response = await fetch(`/per_season_shots_grid/${filename}`);
+        const response = await fetch(`${import.meta.env.BASE_URL}per_season_shots_grid/${filename}`);
         
         if (!response.ok) {
           console.warn(`Failed to load ${filename}: ${response.status}`);

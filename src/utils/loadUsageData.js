@@ -6,7 +6,7 @@
 export async function loadUsageData() {
   try {
     console.log('Loading player_stats_usage_rs.csv...');
-    const response = await fetch('/player_stats_usage_rs.csv');
+    const response = await fetch(`${import.meta.env.BASE_URL}player_stats_usage_rs.csv`);
     if (!response.ok) {
       throw new Error(`Failed to fetch CSV: ${response.status}`);
     }

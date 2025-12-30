@@ -5,7 +5,7 @@
 export async function parseNBAData() {
   try {
     // Load CSV from public folder
-    const response = await fetch('/nba_avgs_per_season.csv');
+    const response = await fetch(`${import.meta.env.BASE_URL}nba_avgs_per_season.csv`);
     const text = await response.text();
     const lines = text.split('\n');
     

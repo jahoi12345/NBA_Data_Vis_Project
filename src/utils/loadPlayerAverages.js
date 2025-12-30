@@ -6,7 +6,7 @@
 export async function loadPlayerAverages() {
   try {
     console.log('Loading player_season_averages.csv...');
-    const response = await fetch('/player_season_averages.csv');
+    const response = await fetch(`${import.meta.env.BASE_URL}player_season_averages.csv`);
     if (!response.ok) {
       throw new Error(`Failed to fetch CSV: ${response.status}`);
     }

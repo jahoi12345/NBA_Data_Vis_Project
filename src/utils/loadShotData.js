@@ -15,7 +15,7 @@ export async function loadShotData() {
       try {
         const filename = `NBA_${seasonYear}_Shots.csv`;
         console.log(`🔥 Attempting to load ${filename}...`);
-        const response = await fetch(`/per_season_shots/${filename}`);
+        const response = await fetch(`${import.meta.env.BASE_URL}per_season_shots/${filename}`);
         
         if (!response.ok) {
           console.warn(`🔥 Failed to load ${filename}: ${response.status} ${response.statusText}`);
