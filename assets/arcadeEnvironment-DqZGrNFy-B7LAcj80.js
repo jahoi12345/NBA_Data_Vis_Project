@@ -1,0 +1,1 @@
+import{u as r}from"./enum-BzLwmiID-CcyIdWlQ.js";function n(e){if(typeof e=="string")return e.toLowerCase();if("name"in e)return e.name.toLowerCase();if(typeof e.value!="string")throw new r(null,"InvalidIdentifier",null);return e.value.toLowerCase()}const o=Object.freeze({aborted:!1});export{n as o,o as r};

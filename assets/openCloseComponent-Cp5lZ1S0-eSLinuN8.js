@@ -1,0 +1,1 @@
+import{N as e}from"./dom-B0I8tRvb-D-J9meVE.js";function n(o){return o[o.openProp||"open"]}async function a(o){await o.updateComplete,n(o)?o.onBeforeOpen():o.onBeforeClose(),await o.updateComplete,o.transitionEl&&await e(o.transitionEl,o.transitionProp),n(o)?o.onOpen():o.onClose()}export{a as s};

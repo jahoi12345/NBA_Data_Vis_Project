@@ -1,0 +1,1 @@
+import{aP as u}from"./jsonMap-Bs3hmeCU-Cusd0Fmz.js";function p(o,t,e){let a,c;return t===void 0||Array.isArray(t)?(c=o,e=t,a=[void 0]):(c=t,a=Array.isArray(o)?o:[o]),(s,d)=>{const n=s.constructor.prototype;a.forEach(i=>{const r=u(s,i,c);r.read&&typeof r.read=="object"||(r.read={}),r.read.reader=n[d],e&&(r.read.source=(r.read.source||[]).concat(e))})}}export{p as u};

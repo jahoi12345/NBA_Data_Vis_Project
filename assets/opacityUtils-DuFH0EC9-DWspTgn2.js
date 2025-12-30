@@ -1,0 +1,1 @@
+import{aL as a}from"./jsonMap-Bs3hmeCU-Cusd0Fmz.js";function m(t){const n=a(100*(1-t));return Math.max(0,Math.min(n,100))}function r(t){const n=1-t/100;return Math.max(0,Math.min(n,1))}export{r as m,m as o};

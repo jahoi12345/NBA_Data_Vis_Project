@@ -1,0 +1,1 @@
+import{a$ as e}from"./jsonMap-Bs3hmeCU-Cusd0Fmz.js";let i=class extends e{notify(){const o=this._observers;if(o&&o.length>0){const s=o.slice();for(const t of s)t.onInvalidated(),t.onCommitted()}}};export{i as r};

@@ -1,0 +1,1 @@
+import{a0 as t}from"./jsonMap-Bs3hmeCU-Cusd0Fmz.js";import{V as r}from"./lengthUtils-Dt1_RvOO-bleznLOi.js";function c(n){return!!n&&r[n]!=null}function i(n){return 1/(r[n]||1)}function o(){const n=Object.keys(r);return t(n,"decimal-degrees"),n.sort(),n}const s=o();export{i,s as m,c as u};
