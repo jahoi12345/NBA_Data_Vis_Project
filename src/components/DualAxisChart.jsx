@@ -616,6 +616,40 @@ export default function DualAxisChart({
             tickFormat={(value) => Math.round(value).toString()}
             numTicks={width > 600 ? 10 : 5}
           />
+
+          {/* Axis Labels */}
+          <text
+            x={xMax / 2}
+            y={yMax + margin.bottom - 10}
+            textAnchor="middle"
+            fill="#374151"
+            fontSize={14}
+            fontWeight="500"
+          >
+            Season
+          </text>
+          <text
+            x={-margin.left / 2 - 30}
+            y={yMax / 2}
+            textAnchor="middle"
+            fill="#8b5cf6"
+            fontSize={14}
+            fontWeight="500"
+            transform={`rotate(-90, ${-margin.left / 2 - 30}, ${yMax / 2})`}
+          >
+            Pace (Possessions per Game)
+          </text>
+          <text
+            x={xMax + margin.right / 2 + 10}
+            y={yMax / 2}
+            textAnchor="middle"
+            fill="#ec4899"
+            fontSize={14}
+            fontWeight="500"
+            transform={`rotate(90, ${xMax + margin.right / 2 + 10}, ${yMax / 2})`}
+          >
+            Points per 100 Possessions
+          </text>
         </g>
       </svg>
       

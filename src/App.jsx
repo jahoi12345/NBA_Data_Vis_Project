@@ -8,6 +8,7 @@ import LeagueAverageUsageChart from "./components/LeagueAverageUsageChart";
 import CourtView from "./components/CourtView";
 import ShotHeatMapArcGIS from "./components/ShotHeatMapArcGIS";
 import NormalizedOffenseChart from "./components/NormalizedOffenseChart";
+import LoadingScreen from "./components/LoadingScreen";
 import { parseNBAData } from "./utils/parseCSV";
 import { loadPlayerAverages } from "./utils/loadPlayerAverages";
 import { loadUsageData } from "./utils/loadUsageData";
@@ -26,6 +27,7 @@ function App() {
   const [usageDataLoading, setUsageDataLoading] = useState(true);
   const [shotData, setShotData] = useState([]);
   const [shotDataLoading, setShotDataLoading] = useState(true);
+  const [shotDataProgress, setShotDataProgress] = useState(0);
   const chartSectionRef = useRef(null);
   const separatedSectionRef = useRef(null);
   const lollipopSectionRef = useRef(null);
@@ -131,14 +133,22 @@ function App() {
   useEffect(() => {
     async function loadShots() {
       setShotDataLoading(true);
+      setShotDataProgress(0);
       try {
         console.log('🔥 App: Loading shot data...');
-        const shots = await loadShotData();
+        const shots = await loadShotData((progress) => {
+          setShotDataProgress(progress);
+        });
         console.log('🔥 App: Shot data loaded:', shots.length, 'shots');
         setShotData(shots);
-        setShotDataLoading(false);
+        setShotDataProgress(100);
+        // Small delay to show 100% before hiding loading screen
+        setTimeout(() => {
+          setShotDataLoading(false);
+        }, 300);
       } catch (error) {
         console.error('🔥 App: Error loading shot data:', error);
+        setShotDataProgress(100);
         setShotDataLoading(false);
       }
     }
@@ -168,12 +178,31 @@ function App() {
      INTERSECTION OBSERVER
   --------------------------------*/
   useEffect(() => {
+    // Wait for loading to complete before setting up observers
+    if (shotDataLoading) return;
+    
     if (!chartSectionRef.current) {
       console.log('⚠️ chartSectionRef is null');
       return;
     }
 
     console.log('📊 Setting up intersection observer for chart section');
+
+    // Check if already in view on mount (with small delay to ensure DOM is ready)
+    const checkInitialVisibility = () => {
+      if (chartSectionRef.current) {
+        const rect = chartSectionRef.current.getBoundingClientRect();
+        const isInView = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isInView) {
+          console.log('✅ Chart section already in view - setting chartVisible to true');
+          setChartVisible(true);
+        }
+      }
+    };
+    
+    // Check immediately and after a small delay
+    checkInitialVisibility();
+    const timeoutId = setTimeout(checkInitialVisibility, 100);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -189,17 +218,23 @@ function App() {
         }
         // Don't set chartVisible to false when leaving - keep it true once animated
       },
-      { threshold: [0, 0.1, 0.5, 1.0] }
+      { threshold: [0, 0.1, 0.5, 1.0], rootMargin: '100px' }
     );
 
     observer.observe(chartSectionRef.current);
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [shotDataLoading]);
 
   /* -------------------------------
      SCROLL-BASED SEPARATION TRIGGER
   --------------------------------*/
   useEffect(() => {
+    // Wait for loading to complete before setting up scroll handlers
+    if (shotDataLoading) return;
+    
     console.log('🔄 Setting up scroll handler - showSeparated:', showSeparated);
     
     if (showSeparated) {
@@ -301,7 +336,7 @@ function App() {
       console.log('🧹 Cleaning up scroll listener');
       window.removeEventListener('scroll', throttledScroll);
     };
-  }, [showSeparated]);
+  }, [showSeparated, shotDataLoading]);
 
   const [separatedVisible, setSeparatedVisible] = useState(false);
 
@@ -309,7 +344,25 @@ function App() {
      DUAL AXIS CHART VISIBILITY
   --------------------------------*/
   useEffect(() => {
+    // Wait for loading to complete before setting up observers
+    if (shotDataLoading) return;
+    
     if (!dualAxisSectionRef.current) return;
+
+    // Check if already in view on mount (with small delay to ensure DOM is ready)
+    const checkInitialVisibility = () => {
+      if (dualAxisSectionRef.current) {
+        const rect = dualAxisSectionRef.current.getBoundingClientRect();
+        const isInView = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isInView) {
+          setDualAxisVisible(true);
+        }
+      }
+    };
+    
+    // Check immediately and after a small delay
+    checkInitialVisibility();
+    const timeoutId = setTimeout(checkInitialVisibility, 100);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -317,17 +370,23 @@ function App() {
           setDualAxisVisible(true);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: '100px' }
     );
 
     observer.observe(dualAxisSectionRef.current);
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [shotDataLoading]);
 
   /* -------------------------------
      DUAL AXIS ERA TRACKING
   --------------------------------*/
   useEffect(() => {
+    // Wait for loading to complete before setting up scroll handlers
+    if (shotDataLoading) return;
+    
     const handleScroll = () => {
       if (!dualAxisSectionRef.current) return;
       
@@ -360,13 +419,31 @@ function App() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // Check on mount
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [shotDataLoading]);
 
   /* -------------------------------
      LOLLIPOP CHART VISIBILITY
   --------------------------------*/
   useEffect(() => {
+    // Wait for loading to complete before setting up observers
+    if (shotDataLoading) return;
+    
     if (!lollipopSectionRef.current) return;
+
+    // Check if already in view on mount (with small delay to ensure DOM is ready)
+    const checkInitialVisibility = () => {
+      if (lollipopSectionRef.current) {
+        const rect = lollipopSectionRef.current.getBoundingClientRect();
+        const isInView = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isInView) {
+          setLollipopVisible(true);
+        }
+      }
+    };
+    
+    // Check immediately and after a small delay
+    checkInitialVisibility();
+    const timeoutId = setTimeout(checkInitialVisibility, 100);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -374,18 +451,39 @@ function App() {
           setLollipopVisible(true);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: '100px' }
     );
 
     observer.observe(lollipopSectionRef.current);
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [shotDataLoading]);
 
   /* -------------------------------
      LEAGUE USAGE CHART VISIBILITY
   --------------------------------*/
   useEffect(() => {
+    // Wait for loading to complete before setting up observers
+    if (shotDataLoading) return;
+    
     if (!leagueUsageSectionRef.current) return;
+
+    // Check if already in view on mount (with small delay to ensure DOM is ready)
+    const checkInitialVisibility = () => {
+      if (leagueUsageSectionRef.current) {
+        const rect = leagueUsageSectionRef.current.getBoundingClientRect();
+        const isInView = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isInView) {
+          setLeagueUsageVisible(true);
+        }
+      }
+    };
+    
+    // Check immediately and after a small delay
+    checkInitialVisibility();
+    const timeoutId = setTimeout(checkInitialVisibility, 100);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -393,18 +491,39 @@ function App() {
           setLeagueUsageVisible(true);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: '100px' }
     );
 
     observer.observe(leagueUsageSectionRef.current);
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [shotDataLoading]);
 
   /* -------------------------------
      NORMALIZED OFFENSE CHART VISIBILITY
   --------------------------------*/
   useEffect(() => {
+    // Wait for loading to complete before setting up observers
+    if (shotDataLoading) return;
+    
     if (!normalizedOffenseSectionRef.current) return;
+
+    // Check if already in view on mount (with small delay to ensure DOM is ready)
+    const checkInitialVisibility = () => {
+      if (normalizedOffenseSectionRef.current) {
+        const rect = normalizedOffenseSectionRef.current.getBoundingClientRect();
+        const isInView = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isInView) {
+          setNormalizedOffenseVisible(true);
+        }
+      }
+    };
+    
+    // Check immediately and after a small delay
+    checkInitialVisibility();
+    const timeoutId = setTimeout(checkInitialVisibility, 100);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -412,17 +531,23 @@ function App() {
           setNormalizedOffenseVisible(true);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: '100px' }
     );
 
     observer.observe(normalizedOffenseSectionRef.current);
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [shotDataLoading]);
 
   /* -------------------------------
      SHOT HEAT MAP VISIBILITY
   --------------------------------*/
   useEffect(() => {
+    // Wait for loading to complete before setting up observers
+    if (shotDataLoading) return;
+    
     if (!shotHeatmapSectionRef.current) return;
 
     const observer = new IntersectionObserver(
@@ -436,12 +561,15 @@ function App() {
 
     observer.observe(shotHeatmapSectionRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [shotDataLoading]);
 
   /* -------------------------------
      LEAGUE USAGE CHART SCROLL TRACKING
   --------------------------------*/
   useEffect(() => {
+    // Wait for loading to complete before setting up scroll handlers
+    if (shotDataLoading) return;
+    
     const handleScroll = () => {
       if (!leagueUsageSectionRef.current) return;
       
@@ -480,7 +608,7 @@ function App() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // Check on mount
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [shotDataLoading]);
 
 
 
@@ -488,6 +616,9 @@ function App() {
      SEPARATED CHARTS VISIBILITY
   --------------------------------*/
   useEffect(() => {
+    // Wait for loading to complete before setting up observers
+    if (shotDataLoading) return;
+    
     console.log('🔍 Separated charts visibility check - showSeparated:', showSeparated);
     
     if (!showSeparated) {
@@ -545,7 +676,7 @@ function App() {
         observer.disconnect();
       };
     }
-  }, [showSeparated]);
+  }, [showSeparated, shotDataLoading]);
 
   /* -------------------------------
      TEXT BOX VISIBILITY TRACKING
@@ -605,18 +736,61 @@ function App() {
   }, [normalizedOffenseVisible, textBoxShown.normalizedOffense]);
 
 
+  // Show loading screen until shot data is fully loaded
+  if (shotDataLoading) {
+    return <LoadingScreen progress={shotDataProgress} />;
+  }
+
   return (
     <main className="bg-white text-gray-900">
 
       {/* ===============================
           HERO SECTION
       =============================== */}
-      <section className="h-screen w-full flex items-center justify-center px-8 bg-white pb-16 md:pb-24">
-        <div className="max-w-4xl text-center">
+      <section className="min-h-screen w-full flex flex-col items-center justify-center px-8 bg-white pb-16 md:pb-24 relative overflow-hidden">
+        <div className="max-w-7xl w-full text-center">
           <img src={nbaLogo} alt="NBA" className="h-96 md:h-[30rem] mx-auto mb-6" style={{ backgroundColor: 'white' }} />
-          <h1 className="text-6xl md:text-7xl font-bold mb-6">
+          <h1 className="text-6xl md:text-7xl font-bold mb-12 md:mb-16">
             Have NBA Players Gotten Better?
           </h1>
+          
+          {/* Floating Cards - Horizontally Aligned */}
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 mb-12 md:mb-16 px-4">
+            {/* Card 1 - Genuine Skill Improvement */}
+            <div className="w-full md:w-80 lg:w-96 bg-white rounded-xl shadow-2xl p-6 hover:scale-105 transition-transform duration-300 animate-float">
+              <div className="flex items-center mb-3">
+                <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+                <h3 className="text-lg md:text-xl font-semibold text-gray-900">Genuine Skill Improvement</h3>
+              </div>
+              <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+                Players have genuinely improved their fundamental shooting skills. Free throw, field goal, and true shooting percentages have all increased consistently since 2000, demonstrating real skill development.
+              </p>
+            </div>
+
+            {/* Card 2 - Heliocentric Systems */}
+            <div className="w-full md:w-80 lg:w-96 bg-white rounded-xl shadow-2xl p-6 hover:scale-105 transition-transform duration-300 animate-float-delay-1">
+              <div className="flex items-center mb-3">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <h3 className="text-lg md:text-xl font-semibold text-gray-900">Heliocentric Systems</h3>
+              </div>
+              <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+                Star players handle more offensive load than ever through heliocentric offenses built around high-usage superstars. But the entire league has become more efficient, a systemic shift in how the game is played.
+              </p>
+            </div>
+
+            {/* Card 3 - Analytics Revolution */}
+            <div className="w-full md:w-80 lg:w-96 bg-white rounded-xl shadow-2xl p-6 hover:scale-105 transition-transform duration-300 animate-float-delay-2">
+              <div className="flex items-center mb-3">
+                <div className="w-3 h-3 bg-purple-500 rounded-full mr-3"></div>
+                <h3 className="text-lg md:text-xl font-semibold text-gray-900">Analytics Revolution</h3>
+              </div>
+              <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+                Analytics solved the geometry of basketball, revealing that three-pointers and shots at the rim are mathematically superior. Teams optimized offense accordingly, shifting from mid-range to the three-point revolution.
+              </p>
+            </div>
+          </div>
+
+          {/* Scroll to explore text - appears after cards */}
           <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto">
             Scroll to explore how NBA players and the game have evolved over time
           </p>
@@ -638,7 +812,7 @@ function App() {
                 Elite Players Per Season
               </h2>
               <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
-                Number of players averaging &gt;25 pts, &gt;5 reb, and &gt;5 ast per season (Regular Season only)
+                Number of players averaging &gt;25 points (pts), &gt;5 rebounds (reb), and &gt;5 assists (ast) per season (Regular Season only)
               </p>
             </div>
 
@@ -736,7 +910,7 @@ function App() {
             The Pace Theory
           </h3>
           <p className="text-gray-700 leading-relaxed">
-            Pace is up - there are more possessions per game than in previous eras. But pace alone doesn't explain the efficiency jump. 
+            Pace (possessions per game) is up - there are more possessions per game than in previous eras. But pace alone doesn't explain the efficiency jump. 
             Teams aren't just playing faster; they're playing smarter, solving the geometry of the game in ways that previous generations couldn't.
           </p>
         </FloatingTextBox>
@@ -808,7 +982,7 @@ function App() {
                 League Average Shooting Percentages
               </h2>
               <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
-                NBA FT%, FG%, and TS% by season (1979-80 onward)
+                NBA Free Throw (FT), Field Goal (FG), and True Shooting (TS) percentages by season (1979-80 onward)
               </p>
             </div>
 
@@ -846,7 +1020,9 @@ function App() {
           <p className="text-gray-700 leading-relaxed">
             Rules have changed to favor offense - hand-checking restrictions, defensive three seconds, and other modifications. 
             But while rules create the conditions for higher scoring, they don't explain why players are hitting shots at historically 
-            unprecedented rates. The math has changed, and players have adapted.
+            unprecedented rates. The math has changed, and players have adapted. Free Throw percentage (FT%) measures accuracy from the free throw line, 
+            Field Goal percentage (FG%) measures accuracy on all field goal attempts, and True Shooting percentage (TS%) accounts for the value of 
+            three-pointers and free throws to provide a comprehensive measure of shooting efficiency.
           </p>
         </FloatingTextBox>
       </section>
@@ -959,8 +1135,9 @@ function App() {
           </h3>
           <p className="text-gray-700 leading-relaxed">
             Star players are handling more offensive load than ever - heliocentric offenses built around high-usage superstars. 
-            But here's the thing: role players are also scoring more. The entire league has become more efficient, not just the stars. 
-            This suggests something deeper than just better players - it's a systemic shift in how the game is played.
+            Usage percentage measures the percentage of team possessions a player uses while on the court, accounting for field goal attempts, 
+            free throw attempts, and turnovers. But here's the thing: role players are also scoring more. The entire league has become more efficient, 
+            not just the stars. This suggests something deeper than just better players - it's a systemic shift in how the game is played.
           </p>
         </FloatingTextBox>
 

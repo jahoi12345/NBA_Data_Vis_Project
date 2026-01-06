@@ -91,6 +91,49 @@ export default function FTPercentChart({ data, width = 800, height = 400, margin
   const fgPathString = useMemo(() => generateCurvedPath(d => d.fgPercent), [xScale, yScale, data]);
   const tsPathString = useMemo(() => generateCurvedPath(d => d.tsPercent), [xScale, yScale, data]);
 
+  // Calculate linear regression for trendlines
+  const calculateLinearRegression = (getValue) => {
+    if (!data || data.length === 0) return null;
+    
+    const n = data.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    
+    data.forEach(d => {
+      const x = d.year;
+      const y = getValue(d);
+      sumX += x;
+      sumY += y;
+      sumXY += x * y;
+      sumX2 += x * x;
+    });
+    
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    
+    return { slope, intercept };
+  };
+
+  const ftRegression = useMemo(() => calculateLinearRegression(d => d.ftPercent), [data]);
+  const fgRegression = useMemo(() => calculateLinearRegression(d => d.fgPercent), [data]);
+  const tsRegression = useMemo(() => calculateLinearRegression(d => d.tsPercent), [data]);
+
+  // Generate trendline paths
+  const generateTrendlinePath = (regression) => {
+    if (!xScale || !yScale || !regression) return '';
+    
+    const minYear = Math.min(...data.map(d => d.year));
+    const maxYear = Math.max(...data.map(d => d.year));
+    
+    const y1 = regression.slope * minYear + regression.intercept;
+    const y2 = regression.slope * maxYear + regression.intercept;
+    
+    return `M ${xScale(minYear)} ${yScale(y1)} L ${xScale(maxYear)} ${yScale(y2)}`;
+  };
+
+  const ftTrendlinePath = useMemo(() => generateTrendlinePath(ftRegression), [xScale, yScale, ftRegression, data]);
+  const fgTrendlinePath = useMemo(() => generateTrendlinePath(fgRegression), [xScale, yScale, fgRegression, data]);
+  const tsTrendlinePath = useMemo(() => generateTrendlinePath(tsRegression), [xScale, yScale, tsRegression, data]);
+
   useEffect(() => {
     // Calculate path lengths when paths are available
     const calculateLengths = () => {
@@ -317,6 +360,41 @@ export default function FTPercentChart({ data, width = 800, height = 400, margin
             />
           )}
 
+          {/* Trendlines - shown after line animation completes */}
+          {lineProgress >= 1 && ftTrendlinePath && (
+            <path
+              d={ftTrendlinePath}
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth={2}
+              strokeDasharray="5,5"
+              opacity={0.5}
+              strokeLinecap="round"
+            />
+          )}
+          {lineProgress >= 1 && fgTrendlinePath && (
+            <path
+              d={fgTrendlinePath}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth={2}
+              strokeDasharray="5,5"
+              opacity={0.5}
+              strokeLinecap="round"
+            />
+          )}
+          {lineProgress >= 1 && tsTrendlinePath && (
+            <path
+              d={tsTrendlinePath}
+              fill="none"
+              stroke="#f59e0b"
+              strokeWidth={2}
+              strokeDasharray="5,5"
+              opacity={0.5}
+              strokeLinecap="round"
+            />
+          )}
+
           {/* Crosshair on hover */}
           {tooltipOpen && tooltipData && (
             <>
@@ -456,6 +534,29 @@ export default function FTPercentChart({ data, width = 800, height = 400, margin
             tickFormat={(value) => Math.round(value).toString()}
             numTicks={width > 600 ? 10 : 5}
           />
+
+          {/* Axis Labels */}
+          <text
+            x={xMax / 2}
+            y={yMax + margin.bottom - 10}
+            textAnchor="middle"
+            fill="#374151"
+            fontSize={14}
+            fontWeight="500"
+          >
+            Season
+          </text>
+          <text
+            x={-margin.left / 2 - 40}
+            y={yMax / 2}
+            textAnchor="middle"
+            fill="#374151"
+            fontSize={14}
+            fontWeight="500"
+            transform={`rotate(-90, ${-margin.left / 2 - 40}, ${yMax / 2})`}
+          >
+            Percentage (%)
+          </text>
         </g>
       </svg>
       
@@ -464,15 +565,15 @@ export default function FTPercentChart({ data, width = 800, height = 400, margin
         <div className="flex flex-col gap-2 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-0.5 bg-[#3b82f6]"></div>
-            <span className="text-gray-700">FT%</span>
+            <span className="text-gray-700">Free Throw (FT%)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-0.5 bg-[#10b981]"></div>
-            <span className="text-gray-700">FG%</span>
+            <span className="text-gray-700">Field Goal (FG%)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-0.5 bg-[#f59e0b]"></div>
-            <span className="text-gray-700">TS%</span>
+            <span className="text-gray-700">True Shooting (TS%)</span>
           </div>
         </div>
       </div>
@@ -494,13 +595,13 @@ export default function FTPercentChart({ data, width = 800, height = 400, margin
         >
           <div className="font-semibold mb-2">{tooltipData.season}</div>
           <div className="text-blue-300">
-            FT%: {tooltipData.ftPercent.toFixed(1)}%
+            Free Throw (FT%): {tooltipData.ftPercent.toFixed(1)}%
           </div>
           <div className="text-green-300">
-            FG%: {tooltipData.fgPercent.toFixed(1)}%
+            Field Goal (FG%): {tooltipData.fgPercent.toFixed(1)}%
           </div>
           <div className="text-orange-300">
-            TS%: {tooltipData.tsPercent.toFixed(1)}%
+            True Shooting (TS%): {tooltipData.tsPercent.toFixed(1)}%
           </div>
         </Tooltip>
       )}

@@ -23,7 +23,6 @@ export default function ShotHeatMapArcGIS({
   const containerRef = useRef(null);
   const [packageInstalled, setPackageInstalled] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(season || "2004");
-  const [rotation, setRotation] = useState(0); // Rotation in degrees
   const featureLayerRef = useRef(null);
   const arcGISModulesRef = useRef(null); // Store ArcGIS modules for reuse
   const seasonStatisticsRef = useRef(null); // Store pre-calculated statistics per season
@@ -121,7 +120,7 @@ export default function ShotHeatMapArcGIS({
               y: 0,
               z: 750  // Height above court (in feet, matching reference example)
             },
-            heading: rotation,  // Use rotation state
+            heading: 0,
             tilt: 45  // 45 degree angle for 3D view
           },
           environment: {
@@ -354,37 +353,6 @@ export default function ShotHeatMapArcGIS({
     updateRendererForSeason(selectedSeason, featureLayerRef.current, seasonStatisticsRef, SimpleRenderer, ExtrudeSymbol3DLayer, PolygonSymbol3D);
   }, [selectedSeason, isVisible]);
   
-  // Update camera rotation when rotation state changes
-  useEffect(() => {
-    if (!sceneViewRef.current) return;
-    
-    const view = sceneViewRef.current;
-    
-    // Ensure view is ready before updating camera
-    // view.when() returns a promise that resolves immediately if view is already ready
-    view.when(() => {
-      // Use goTo() method for smooth camera updates - this is the recommended way
-      // goTo() preserves all other camera properties (position, tilt, etc.)
-      view.goTo({
-        heading: rotation
-      }, {
-        animate: true,
-        duration: 500
-      }).catch((error) => {
-        // If goTo fails, fallback to direct camera update
-        console.warn('Camera goTo failed, using direct update:', error);
-        try {
-          const camera = view.camera.clone();
-          camera.heading = rotation;
-          view.camera = camera;
-        } catch (e) {
-          console.error('Failed to update camera:', e);
-        }
-      });
-    }).catch((error) => {
-      console.warn('View not ready for camera update, will retry:', error);
-    });
-  }, [rotation]);
 
   // Helper function to match season strings (handles various formats)
   const matchSeason = (shotSeason, filterSeason) => {
@@ -529,12 +497,39 @@ export default function ShotHeatMapArcGIS({
         // Define all seasons list (2004-2024)
         const allSeasonsList = Array.from({ length: 21 }, (_, i) => String(2004 + i));
         
+        // Normalize initialSeason to 4-digit year format to match binSeasons keys
+        const initialSeasonYear = String(initialSeason || '').trim().substring(0, 4);
+        
+        // Calculate volume threshold for filtering low-volume bins (percentile-based)
+        const VOLUME_THRESHOLD_PERCENTILE = 0.25; // Only show bins above 25th percentile
+        const initialSeasonCounts = Array.from(binData.values())
+          .map(binSeasons => {
+            // Try both the normalized year and the original initialSeason format
+            return binSeasons.get(initialSeasonYear) || binSeasons.get(initialSeason) || 0;
+          })
+          .filter(c => c > 0)
+          .sort((a, b) => a - b);
+        
+        const volumeThreshold = initialSeasonCounts.length > 0
+          ? initialSeasonCounts[Math.floor(initialSeasonCounts.length * VOLUME_THRESHOLD_PERCENTILE)]
+          : 0;
+        
+        const filteredOutCount = initialSeasonCounts.filter(c => c < volumeThreshold).length;
+        console.log(`🔥 ShotHeatMapArcGIS: Volume filtering - threshold = ${volumeThreshold.toFixed(2)} (${(VOLUME_THRESHOLD_PERCENTILE * 100)}th percentile), filtering out ${filteredOutCount} low-volume bins out of ${initialSeasonCounts.length} total bins with data`);
+        
         // Create polygon features for non-empty bins with all season attributes
         const featuresWithAllSeasons = [];
         let newFid = 1;
         
         binData.forEach((binSeasons, binKey) => {
           if (binSeasons.size === 0) return;
+          
+          // Filter: only include bins with weighted count above threshold for initial season
+          // Try both the normalized year and the original initialSeason format
+          const initialSeasonCount = binSeasons.get(initialSeasonYear) || binSeasons.get(initialSeason) || 0;
+          if (initialSeasonCount < volumeThreshold) {
+            return; // Skip low-volume bins
+          }
           
           const [binX, binY] = binKey.split(',').map(Number);
           
@@ -570,7 +565,8 @@ export default function ShotHeatMapArcGIS({
           allSeasonsList.forEach(seasonYear => {
             attributes[`Weighted_Count_${seasonYear}`] = binSeasons.get(seasonYear) || 0;
           });
-          attributes.Weighted_Count_Current = binSeasons.get(initialSeason) || 0;
+          // Use normalized season key to match binSeasons map keys
+          attributes.Weighted_Count_Current = binSeasons.get(initialSeasonYear) || binSeasons.get(initialSeason) || 0;
           
           featuresWithAllSeasons.push({
             geometry: polygon,
@@ -1294,73 +1290,89 @@ export default function ShotHeatMapArcGIS({
     };
   }, []);
 
-  const handleRotateClockwise = () => {
-    setRotation(prev => (prev + 90) % 360);
-  };
-
-  const handleRotateCounterClockwise = () => {
-    setRotation(prev => (prev - 90 + 360) % 360);
-  };
-
   return (
-    <div style={{ width, height, backgroundColor: 'white', position: 'relative' }}>
-      {/* Rotation buttons */}
+    <div style={{ width, height, backgroundColor: 'white', position: 'relative', margin: '0 auto' }}>
       <div style={{
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
         display: 'flex',
-        gap: '8px',
-        zIndex: 1000
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        height: 'calc(100% - 80px)',
+        position: 'relative',
+        width: '100%'
       }}>
-        <button
-          onClick={handleRotateCounterClockwise}
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            backgroundColor: 'white',
-            cursor: 'pointer',
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '1000px',
+          margin: '0 auto',
+          height: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start'
+        }}>
+          <div 
+            ref={containerRef} 
+            style={{ 
+              width: 'calc(100% - 120px)', // Reserve space for legend on the right
+              maxWidth: '880px', // Center the heatmap view
+              height: '100%',
+              backgroundColor: 'white',
+              margin: '0 auto'
+            }} 
+          />
+          {/* Color Legend on the right side */}
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            right: '10px',
+            width: '100px',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '18px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}
-          aria-label="Rotate counter-clockwise"
-        >
-          ↺
-        </button>
-        <button
-          onClick={handleRotateClockwise}
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            backgroundColor: 'white',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '18px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}
-          aria-label="Rotate clockwise"
-        >
-          ↻
-        </button>
+            gap: '8px',
+            zIndex: 10
+          }}>
+            <div style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: '#333',
+              marginBottom: '4px'
+            }}>
+              Shot Density
+            </div>
+            {/* Vertical gradient bar with labels */}
+            <div style={{
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              <span style={{ 
+                fontSize: '10px', 
+                color: '#666', 
+                fontWeight: '600' 
+              }}>
+                High
+              </span>
+              <div style={{
+                width: '30px',
+                height: '300px',
+                background: 'linear-gradient(to top, rgb(212, 227, 245) 0%, rgb(133, 154, 250) 20%, rgb(62, 90, 253) 40%, rgb(132, 149, 122) 60%, rgb(234, 179, 8) 80%, rgb(255, 255, 0) 100%)',
+                borderRadius: '4px',
+                border: '1px solid #ddd',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }} />
+              <span style={{ 
+                fontSize: '10px', 
+                color: '#666' 
+              }}>
+                Low
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      <div 
-        ref={containerRef} 
-        style={{ 
-          width: '100%', 
-          height: 'calc(100% - 80px)', // Reserve space for slider
-          backgroundColor: 'white'
-        }} 
-      />
       {/* Season slider at the bottom */}
       <div style={{
         position: 'absolute',

@@ -521,6 +521,29 @@ export default function NormalizedOffenseChart({
             })}
             tickFormat={(d) => `${Math.round(d)}`}
           />
+
+          {/* Axis Labels */}
+          <text
+            x={xMax / 2}
+            y={yMax + margin.bottom + 5}
+            textAnchor="middle"
+            fill="#374151"
+            fontSize={14}
+            fontWeight="500"
+          >
+            Season
+          </text>
+          <text
+            x={-margin.left / 2 - 20}
+            y={yMax / 2}
+            textAnchor="middle"
+            fill="#374151"
+            fontSize={14}
+            fontWeight="500"
+            transform={`rotate(-90, ${-margin.left / 2 - 20}, ${yMax / 2})`}
+          >
+            Normalized Value (1980 = 100)
+          </text>
         </g>
       </svg>
 

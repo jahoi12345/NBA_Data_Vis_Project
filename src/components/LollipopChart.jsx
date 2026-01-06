@@ -221,6 +221,29 @@ export default function LollipopChart({
               dx: -5,
             }}
           />
+
+          {/* Axis Labels */}
+          <text
+            x={xMax / 2}
+            y={yMax + margin.bottom - 5}
+            textAnchor="middle"
+            fill="#374151"
+            fontSize={14}
+            fontWeight="500"
+          >
+            Season
+          </text>
+          <text
+            x={-margin.left / 2}
+            y={yMax / 2}
+            textAnchor="middle"
+            fill="#374151"
+            fontSize={14}
+            fontWeight="500"
+            transform={`rotate(-90, ${-margin.left / 2}, ${yMax / 2})`}
+          >
+            Number of Players
+          </text>
         </g>
       </svg>
 

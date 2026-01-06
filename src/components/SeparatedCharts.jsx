@@ -279,6 +279,29 @@ function SingleMetricChart({
             tickFormat={(value) => Math.round(value).toString()}
             numTicks={width > 400 ? 8 : 5}
           />
+
+          {/* Axis Labels */}
+          <text
+            x={xMax / 2}
+            y={yMax + margin.bottom + 5}
+            textAnchor="middle"
+            fill="#374151"
+            fontSize={14}
+            fontWeight="500"
+          >
+            Season
+          </text>
+          <text
+            x={-margin.left / 2 - 40}
+            y={yMax / 2 + 15}
+            textAnchor="middle"
+            fill="#374151"
+            fontSize={14}
+            fontWeight="500"
+            transform={`rotate(-90, ${-margin.left / 2 - 40}, ${yMax / 2 + 15})`}
+          >
+            Percentage (%)
+          </text>
         </g>
       </svg>
 

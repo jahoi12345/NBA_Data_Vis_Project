@@ -1,17 +1,20 @@
 /**
  * Load and parse NBA shot data from CSV files
  * Returns aggregated shot data with coordinates
+ * @param {Function} onProgress - Optional callback function(progress) called with progress 0-100
  */
-export async function loadShotData() {
+export async function loadShotData(onProgress = null) {
   try {
     console.log('Loading shot data from CSV files...');
     
     // Get all season files (2004-2024)
     const seasons = Array.from({ length: 21 }, (_, i) => 2004 + i);
     const allShots = [];
+    const totalSeasons = seasons.length;
     
     // Load each season's shot data
-    for (const seasonYear of seasons) {
+    for (let i = 0; i < seasons.length; i++) {
+      const seasonYear = seasons[i];
       try {
         const filename = `NBA_${seasonYear}_Shots.csv`;
         console.log(`🔥 Attempting to load ${filename}...`);
@@ -240,9 +243,21 @@ export async function loadShotData() {
         if (shotsAdded === 0 && dataLines.length > 0) {
           console.warn(`🔥 ${filename}: WARNING - No shots added! Check coordinate filtering.`);
         }
+        
+        // Update progress after each season is processed
+        if (onProgress) {
+          const progress = Math.round(((i + 1) / totalSeasons) * 100);
+          onProgress(progress);
+        }
       } catch (error) {
         console.warn(`🔥 Error loading ${seasonYear} shots:`, error);
         console.error('Error stack:', error.stack);
+        
+        // Still update progress even if there was an error
+        if (onProgress) {
+          const progress = Math.round(((i + 1) / totalSeasons) * 100);
+          onProgress(progress);
+        }
       }
     }
     
