@@ -67,6 +67,13 @@ async function processSeasonFile(season, inputPath, outputDir) {
     return null;
   }
   
+  // CRITICAL: Determine if this season needs coordinate conversion (2020-2022)
+  // These seasons have LOC_X and LOC_Y stored in tenths of feet with Y from baseline
+  const needsConversion = season >= 2020 && season <= 2022;
+  if (needsConversion) {
+    console.log(`  ⚠️ Season ${season} needs coordinate conversion (tenths of feet -> feet)`);
+  }
+  
   // Grid to aggregate shots
   const grid = new Map();
   let totalShots = 0;
@@ -79,13 +86,32 @@ async function processSeasonFile(season, inputPath, outputDir) {
     
     if (columns.length <= Math.max(locXIdx, locYIdx, shotMadeIdx)) continue;
     
-    const locX = parseFloat(columns[locXIdx]?.trim());
-    const locY = parseFloat(columns[locYIdx]?.trim());
+    const locXRaw = parseFloat(columns[locXIdx]?.trim());
+    const locYRaw = parseFloat(columns[locYIdx]?.trim());
     const shotMade = columns[shotMadeIdx]?.trim() === 'TRUE';
+    
+    // Skip invalid coordinates
+    if (isNaN(locXRaw) || isNaN(locYRaw)) continue;
+    
+    // CRITICAL: Convert coordinates to normalized feet system
+    // Seasons 2020-2022: LOC_X and LOC_Y are in tenths of feet
+    // All other seasons: LOC_X and LOC_Y are already in feet
+    let locX, locY;
+    
+    if (needsConversion) {
+      // Convert from tenths of feet to feet, and adjust Y to be basket-centered
+      // LOC_X: multiply by 10 to convert tenths to feet
+      // LOC_Y: multiply by 10 to convert tenths to feet, then subtract 52.5 to convert from baseline to basket-centered
+      locX = locXRaw * 10;
+      locY = (locYRaw * 10) - 52.5;
+    } else {
+      // Already in feet, use as-is
+      locX = locXRaw;
+      locY = locYRaw;
+    }
     
     // Filter for valid coordinates and half court
     if (
-      !isNaN(locX) && !isNaN(locY) &&
       locX >= -30 && locX <= 30 &&
       locY >= 0 && locY <= 47  // Half court only
     ) {

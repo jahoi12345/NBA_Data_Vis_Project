@@ -1,5 +1,13 @@
 import { useEffect, useState, useRef, memo, useMemo } from 'react';
 
+// ============================================
+// STANDARDIZED TIMING CONSTANTS (Desktop)
+// ============================================
+// These ensure consistent behavior across all text boxes
+const STANDARD_FADE_IN_PERCENT = 0.05;    // 5% of range for fade-in
+const STANDARD_FADE_OUT_PERCENT = 0.05;   // 5% of range for fade-out  
+const STANDARD_STAY_CENTERED_PERCENT = 0.08; // 8% of range to stay centered after fade-in
+
 const FloatingTextBox = memo(function FloatingTextBox({ 
   children, 
   scrollPosition, 
@@ -10,7 +18,7 @@ const FloatingTextBox = memo(function FloatingTextBox({
   fadeOutDistance = 200, // Distance in pixels past section to start fading out
   scrollRange = null, // Optional: [startProgress, endProgress] for sequential behavior (0-1)
   stayCentered = false, // If true, text box stays centered (no upward scroll) and only fades
-  noStickyPeriod = false // If true, start scrolling immediately after fade-in (no stay-centered period)
+  staticPosition = false // If true, text box is fully static with no scroll tracking
 }) {
   const [opacity, setOpacity] = useState(0);
   const [translateY, setTranslateY] = useState(0);
@@ -18,6 +26,16 @@ const FloatingTextBox = memo(function FloatingTextBox({
   const lastValuesRef = useRef({ opacity: 0, translateY: 0 });
   const wasVisibleRef = useRef(false);
   const scrollStartPointRef = useRef(null); // Track when scrolling actually started
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Track window size for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Memoize calculations to avoid recalculation
   const calculations = useMemo(() => {
@@ -85,8 +103,10 @@ const FloatingTextBox = memo(function FloatingTextBox({
         return;
       }
 
-      // State-based visibility with scroll-based upward movement
-      if (!isVisible) {
+      // When scrollRange is provided, skip the isVisible check entirely
+      // and let scroll position control visibility
+      // This prevents parent state changes from causing sudden disappearances
+      if (!scrollRange && !isVisible) {
         wasVisibleRef.current = false;
         scrollStartPointRef.current = null;
         if (lastValuesRef.current.opacity !== 0 || lastValuesRef.current.translateY !== 0) {
@@ -97,18 +117,68 @@ const FloatingTextBox = memo(function FloatingTextBox({
         return;
       }
 
-      // If visible by state, check scroll position to determine upward scroll
+      // If calculations aren't available yet, show immediately with full opacity (only if no scrollRange)
       if (!calculations) {
-        if (lastValuesRef.current.opacity !== 1 || lastValuesRef.current.translateY !== 0) {
-          setOpacity(1);
-          setTranslateY(0);
-          lastValuesRef.current = { opacity: 1, translateY: 0 };
+        if (!scrollRange) {
+          if (lastValuesRef.current.opacity !== 1 || lastValuesRef.current.translateY !== 0) {
+            setOpacity(1);
+            setTranslateY(0);
+            lastValuesRef.current = { opacity: 1, translateY: 0 };
+          }
         }
         return;
       }
 
-      const { scrollProgress } = calculations;
+      const { scrollProgress, scrollPastSection } = calculations;
       const viewportHeight = window.innerHeight;
+      
+      // Calculate max scroll distance - larger on mobile to ensure it goes off-screen
+      const maxScrollUp = isMobile 
+        ? viewportHeight * 0.8 + 300  // More aggressive scroll on mobile
+        : viewportHeight * 0.5 + 200; // Original calculation for desktop
+      
+      // If scrollProgress is negative (scrolled above section), handle scroll-up behavior
+      // Only for non-scrollRange textboxes - scrollRange handles its own visibility
+      if (scrollProgress < 0 && !scrollRange) {
+        // If textbox was never visible, hide it immediately
+        if (!wasVisibleRef.current) {
+          if (lastValuesRef.current.opacity !== 0 || lastValuesRef.current.translateY !== 0) {
+            setOpacity(0);
+            setTranslateY(0);
+            lastValuesRef.current = { opacity: 0, translateY: 0 };
+          }
+          return;
+        }
+        
+        // Textbox was visible - scroll it UP as user scrolls up
+        const scrollAboveSection = Math.abs(scrollPastSection);
+        const scrollFactor = 1.2;
+        const targetTranslateY = scrollAboveSection * scrollFactor;
+        
+        // Fade out as the textbox scrolls up
+        const fadeOutDist = viewportHeight * 0.3;
+        const newOpacity = Math.max(0, 1 - (scrollAboveSection / fadeOutDist));
+        const newTranslateY = Math.min(targetTranslateY, maxScrollUp);
+        
+        if (newOpacity <= 0.01) {
+          wasVisibleRef.current = false;
+          scrollStartPointRef.current = null;
+          if (lastValuesRef.current.opacity !== 0) {
+            setOpacity(0);
+            setTranslateY(0);
+            lastValuesRef.current = { opacity: 0, translateY: 0 };
+          }
+          return;
+        }
+        
+        if (Math.abs(lastValuesRef.current.opacity - newOpacity) > 0.01 || 
+            Math.abs(lastValuesRef.current.translateY - newTranslateY) > 1) {
+          setOpacity(newOpacity);
+          setTranslateY(newTranslateY);
+          lastValuesRef.current = { opacity: newOpacity, translateY: newTranslateY };
+        }
+        return;
+      }
       
       // Sequential behavior: use scrollRange if provided
       let newOpacity = 0;
@@ -117,40 +187,51 @@ const FloatingTextBox = memo(function FloatingTextBox({
       if (scrollRange) {
         const [startProgress, endProgress] = scrollRange;
         const totalRange = endProgress - startProgress;
-        const fadeInRange = Math.min(0.03, totalRange * 0.05); // 3% fade in, or 5% of range if smaller
-        const fadeOutRange = Math.min(0.03, totalRange * 0.05); // 3% fade out, or 5% of range if smaller
-        const stayCenteredRange = noStickyPeriod ? 0 : Math.min(0.05, totalRange * 0.1); // Stay centered for 5% of range, or 0 if noStickyPeriod
+        
+        // Use standardized timing constants for consistent behavior
+        const fadeInRange = totalRange * STANDARD_FADE_IN_PERCENT;
+        const fadeOutRange = totalRange * STANDARD_FADE_OUT_PERCENT;
+        const stayCenteredRange = totalRange * STANDARD_STAY_CENTERED_PERCENT;
         
         const scrollStartProgress = startProgress + fadeInRange + stayCenteredRange;
         const scrollEndProgress = endProgress - fadeOutRange;
         
-        // Track when textbox first becomes visible
-        const justBecameVisible = isVisible && !wasVisibleRef.current;
-        if (justBecameVisible) {
-          wasVisibleRef.current = true;
-          scrollStartPointRef.current = null; // Reset scroll start point
-        }
+        // When scrollRange is provided, use ONLY scroll position to determine visibility
+        // The isVisible prop is just an initial trigger, not an ongoing control
+        // This prevents the parent's visibility state from causing sudden disappearances
         
+        // Check if we're outside the range first (before or after)
         if (scrollProgress < startProgress) {
+          // Before scroll range - hide textbox
           newOpacity = 0;
           newTranslateY = 0;
           scrollStartPointRef.current = null;
+          wasVisibleRef.current = false;
+        } else if (scrollProgress >= endProgress) {
+          // After scroll range - hide textbox
+          newOpacity = 0;
+          newTranslateY = -maxScrollUp;
+          wasVisibleRef.current = false;
+          scrollStartPointRef.current = null;
         } else if (scrollProgress < startProgress + fadeInRange) {
-          // Fade in - stay centered
+          // Fade in phase - stay centered
           const fadeInProgress = (scrollProgress - startProgress) / fadeInRange;
-          newOpacity = fadeInProgress;
+          newOpacity = Math.min(1, Math.max(0, fadeInProgress));
           newTranslateY = 0;
+          wasVisibleRef.current = true;
           scrollStartPointRef.current = null;
         } else if (scrollProgress < scrollStartProgress) {
           // Stay centered after fade-in (brief period)
           newOpacity = 1;
           newTranslateY = 0;
+          wasVisibleRef.current = true;
           scrollStartPointRef.current = null;
         } else if (scrollProgress < scrollEndProgress) {
-          // Fully visible - scroll up gradually with smooth easing
+          // Scroll up phase - gradually move upward with smooth easing
           newOpacity = 1;
+          wasVisibleRef.current = true;
+          
           if (stayCentered) {
-            // Stay in center, don't scroll up
             newTranslateY = 0;
             scrollStartPointRef.current = null;
           } else {
@@ -160,7 +241,6 @@ const FloatingTextBox = memo(function FloatingTextBox({
             }
             
             // Calculate scroll from the point where scrolling actually started
-            // This ensures smooth transition from centered (translateY = 0) to scrolling
             const scrollDistance = scrollProgress - scrollStartPointRef.current;
             const totalScrollDistance = scrollEndProgress - scrollStartPointRef.current;
             
@@ -171,51 +251,74 @@ const FloatingTextBox = memo(function FloatingTextBox({
             
             // Use ease-out curve for smoother transition (1 - (1-x)^2)
             const easedValue = 1 - Math.pow(1 - scrollProgressInRange, 2);
-            const maxScrollUp = viewportHeight * 0.5 + 200;
-            // Continuous scroll from 0 to maxScrollUp
             newTranslateY = -easedValue * maxScrollUp;
           }
         } else if (scrollProgress < endProgress) {
-          // Fade out - continue scrolling smoothly
+          // Fade out phase - continue at max scroll position
           const fadeOutProgress = (scrollProgress - scrollEndProgress) / fadeOutRange;
-          newOpacity = 1 - fadeOutProgress;
-          if (stayCentered) {
-            // Stay in center while fading out
-            newTranslateY = 0;
-          } else {
-            // Continue scrolling up while fading out (already at max)
-            const maxScrollUp = viewportHeight * 0.5 + 200;
-            newTranslateY = -maxScrollUp;
-          }
-        } else {
-          newOpacity = 0;
-          newTranslateY = -viewportHeight * 0.5 - 200;
+          newOpacity = Math.max(0, 1 - fadeOutProgress);
+          newTranslateY = stayCentered ? 0 : -maxScrollUp;
         }
       } else {
-        // Default behavior: fade in and scroll up through entire section
-        const fadeInRange = 0.1; // Fade in over first 10% of section
-        const fadeOutRange = 0.1; // Fade out over last 10% of section
+        // Default behavior: use standardized scrollRange [0, 0.40]
+        // This ensures text box fades out before sticky section ends
+        const defaultStart = 0;
+        const defaultEnd = 0.40;
+        const totalRange = defaultEnd - defaultStart;
         
-        if (scrollProgress < 0) {
+        const fadeInRange = totalRange * STANDARD_FADE_IN_PERCENT;
+        const fadeOutRange = totalRange * STANDARD_FADE_OUT_PERCENT;
+        const stayCenteredRange = totalRange * STANDARD_STAY_CENTERED_PERCENT;
+        
+        const scrollStartProgress = defaultStart + fadeInRange + stayCenteredRange;
+        const scrollEndProgress = defaultEnd - fadeOutRange;
+        
+        if (!isVisible || scrollProgress < 0) {
+          // Hide if not visible or before section
           newOpacity = 0;
           newTranslateY = 0;
-        } else if (scrollProgress < fadeInRange) {
+          wasVisibleRef.current = false;
+        } else if (scrollProgress < defaultStart + fadeInRange) {
           // Fade in
           const fadeInProgress = scrollProgress / fadeInRange;
-          newOpacity = fadeInProgress;
+          newOpacity = Math.min(1, fadeInProgress);
           newTranslateY = 0;
-        } else if (scrollProgress < 1 - fadeOutRange) {
-          // Fully visible, scroll up
+          wasVisibleRef.current = true;
+        } else if (scrollProgress < scrollStartProgress) {
+          // Stay centered after fade-in
           newOpacity = 1;
-          const progressInRange = (scrollProgress - fadeInRange) / (1 - fadeInRange - fadeOutRange);
-          const maxScrollUp = viewportHeight * 0.5 + 200;
-          newTranslateY = -progressInRange * maxScrollUp;
-        } else {
+          newTranslateY = 0;
+          wasVisibleRef.current = true;
+          scrollStartPointRef.current = null;
+        } else if (scrollProgress < scrollEndProgress) {
+          // Scroll up phase
+          newOpacity = 1;
+          wasVisibleRef.current = true;
+          
+          if (scrollStartPointRef.current === null) {
+            scrollStartPointRef.current = scrollProgress;
+          }
+          
+          const scrollDistance = scrollProgress - scrollStartPointRef.current;
+          const totalScrollDistance = scrollEndProgress - scrollStartPointRef.current;
+          const scrollProgressInRange = totalScrollDistance > 0 
+            ? Math.max(0, Math.min(1, scrollDistance / totalScrollDistance))
+            : 0;
+          
+          // Use ease-out curve for smooth scrolling
+          const easedValue = 1 - Math.pow(1 - scrollProgressInRange, 2);
+          newTranslateY = -easedValue * maxScrollUp;
+        } else if (scrollProgress < defaultEnd) {
           // Fade out
-          const fadeOutProgress = (scrollProgress - (1 - fadeOutRange)) / fadeOutRange;
-          newOpacity = 1 - fadeOutProgress;
-          const maxScrollUp = viewportHeight * 0.5 + 200;
+          const fadeOutProgress = (scrollProgress - scrollEndProgress) / fadeOutRange;
+          newOpacity = Math.max(0, 1 - fadeOutProgress);
           newTranslateY = -maxScrollUp;
+        } else {
+          // After range - hide completely
+          newOpacity = 0;
+          newTranslateY = -maxScrollUp;
+          wasVisibleRef.current = false;
+          scrollStartPointRef.current = null;
         }
       }
       
@@ -236,9 +339,33 @@ const FloatingTextBox = memo(function FloatingTextBox({
         cancelAnimationFrame(rafIdRef.current);
       }
     };
-  }, [isVisible, scrollPosition, calculations, fadeOutDistance, triggerOffset, scrollRange, stayCentered, noStickyPeriod]);
+  }, [isVisible, scrollPosition, calculations, fadeOutDistance, triggerOffset, scrollRange, stayCentered, isMobile]);
 
-  if (opacity === 0) {
+  // Static position mode: fully static, no scroll tracking
+  if (staticPosition) {
+    if (!isVisible) {
+      return null;
+    }
+    
+    return (
+      <div
+        id={id}
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none"
+        style={{
+          pointerEvents: "none",
+        }}
+      >
+        <div className={`bg-white/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-200 mx-auto text-center ${
+          isMobile ? 'px-4 py-4 max-w-[90vw]' : 'px-8 py-6 max-w-2xl'
+        }`}>
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  // Hide completely when opacity is very low to prevent rendering issues
+  if (opacity < 0.01) {
     return null;
   }
 
@@ -250,9 +377,12 @@ const FloatingTextBox = memo(function FloatingTextBox({
         opacity: opacity,
         transform: `translate(-50%, calc(-50% + ${translateY}px))`,
         willChange: 'transform, opacity', // Optimize for animations
+        visibility: opacity > 0.01 ? 'visible' : 'hidden', // Ensure hidden when opacity is low
       }}
     >
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-200 px-8 py-6 max-w-2xl mx-auto text-center">
+      <div className={`bg-white/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-200 mx-auto text-center ${
+        isMobile ? 'px-4 py-4 max-w-[90vw]' : 'px-8 py-6 max-w-2xl'
+      }`}>
         {children}
       </div>
     </div>

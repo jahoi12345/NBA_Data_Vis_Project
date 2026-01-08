@@ -12,7 +12,7 @@ import LoadingScreen from "./components/LoadingScreen";
 import { parseNBAData } from "./utils/parseCSV";
 import { loadPlayerAverages } from "./utils/loadPlayerAverages";
 import { loadUsageData } from "./utils/loadUsageData";
-import { loadShotData } from "./utils/loadShotData";
+import { loadShotGridData } from "./utils/loadShotGridData";
 import nbaLogo from "./assets/nba_logo_text.png";
 
 function App() {
@@ -30,6 +30,9 @@ function App() {
   const [shotDataProgress, setShotDataProgress] = useState(0);
   const chartSectionRef = useRef(null);
   const separatedSectionRef = useRef(null);
+  const firstMetricRef = useRef(null);
+  const secondMetricRef = useRef(null);
+  const separatedStickyRef = useRef(null);
   const lollipopSectionRef = useRef(null);
   const dualAxisSectionRef = useRef(null);
   const leagueUsageSectionRef = useRef(null);
@@ -128,26 +131,25 @@ function App() {
   }, []);
 
   /* -------------------------------
-     LOAD SHOT DATA
+     LOAD SHOT DATA (Pre-aggregated grid data for performance)
   --------------------------------*/
   useEffect(() => {
     async function loadShots() {
       setShotDataLoading(true);
       setShotDataProgress(0);
       try {
-        console.log('🔥 App: Loading shot data...');
-        const shots = await loadShotData((progress) => {
-          setShotDataProgress(progress);
-        });
-        console.log('🔥 App: Shot data loaded:', shots.length, 'shots');
-        setShotData(shots);
+        console.log('🔥 App: Loading pre-aggregated shot grid data...');
+        setShotDataProgress(30); // Show some progress immediately
+        const gridData = await loadShotGridData();
+        console.log('🔥 App: Shot grid data loaded:', gridData.length, 'grid cells');
+        setShotData(gridData);
         setShotDataProgress(100);
         // Small delay to show 100% before hiding loading screen
         setTimeout(() => {
           setShotDataLoading(false);
         }, 300);
       } catch (error) {
-        console.error('🔥 App: Error loading shot data:', error);
+        console.error('🔥 App: Error loading shot grid data:', error);
         setShotDataProgress(100);
         setShotDataLoading(false);
       }
@@ -339,6 +341,7 @@ function App() {
   }, [showSeparated, shotDataLoading]);
 
   const [separatedVisible, setSeparatedVisible] = useState(false);
+  const [showSeparatedText, setShowSeparatedText] = useState(false);
 
   /* -------------------------------
      DUAL AXIS CHART VISIBILITY
@@ -391,28 +394,25 @@ function App() {
       if (!dualAxisSectionRef.current) return;
       
       const sectionTop = dualAxisSectionRef.current.offsetTop;
+      const sectionHeight = dualAxisSectionRef.current.offsetHeight;
       const scrollY = window.scrollY;
       const scrollPastSection = scrollY - sectionTop;
-      const viewportHeight = window.innerHeight;
+      const scrollProgress = scrollPastSection / sectionHeight;
       
-      // Eras start after 150vh initial display
-      // Each era lasts 100vh (doubled from 50vh)
-      // Total era scroll: 100vh * 3 = 300vh
-      // Total sticky distance: 150vh (initial) + 300vh (eras) = 450vh
+      // Era ranges now aligned with standardized text box scrollRanges:
+      // Main: [0, 0.20], Era 1: [0.20, 0.40], Era 2: [0.40, 0.60], Era 3: [0.60, 0.80]
+      // Graph viewing without text: 0.80+
       
-      const initialDisplayPeriod = viewportHeight * 1.5; // 150vh
-      const eraScrollDistance = viewportHeight * 1.0; // 100vh per era (doubled)
-      
-      if (scrollPastSection < initialDisplayPeriod) {
+      if (scrollProgress < 0.20) {
         setActiveEraIndex(null); // No era active - still in initial display period
-      } else if (scrollPastSection < initialDisplayPeriod + eraScrollDistance) {
+      } else if (scrollProgress < 0.40) {
         setActiveEraIndex(0); // Early Modern / Fast-Break Era (1979-1989)
-      } else if (scrollPastSection < initialDisplayPeriod + eraScrollDistance * 2) {
+      } else if (scrollProgress < 0.60) {
         setActiveEraIndex(1); // Deadball Era (1997-2004)
-      } else if (scrollPastSection < initialDisplayPeriod + eraScrollDistance * 3) {
+      } else if (scrollProgress < 0.80) {
         setActiveEraIndex(2); // Three-Point Revolution (2013-2019)
       } else {
-        setActiveEraIndex(null); // Past all eras
+        setActiveEraIndex(null); // Past all eras - viewing graph without text
       }
     };
     
@@ -462,7 +462,7 @@ function App() {
   }, [shotDataLoading]);
 
   /* -------------------------------
-     LEAGUE USAGE CHART VISIBILITY
+LEAGUE USAGE CHART VISIBILITY
   --------------------------------*/
   useEffect(() => {
     // Wait for loading to complete before setting up observers
@@ -474,7 +474,8 @@ function App() {
     const checkInitialVisibility = () => {
       if (leagueUsageSectionRef.current) {
         const rect = leagueUsageSectionRef.current.getBoundingClientRect();
-        const isInView = rect.top < window.innerHeight && rect.bottom > 0;
+        // More aggressive check - if any part of section is in viewport or about to enter
+        const isInView = rect.top < window.innerHeight + 200 && rect.bottom > -200;
         if (isInView) {
           setLeagueUsageVisible(true);
         }
@@ -483,20 +484,23 @@ function App() {
     
     // Check immediately and after a small delay
     checkInitialVisibility();
-    const timeoutId = setTimeout(checkInitialVisibility, 100);
+    const timeoutId = setTimeout(checkInitialVisibility, 50);
+    const timeoutId2 = setTimeout(checkInitialVisibility, 200);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        // Trigger immediately when any part enters viewport
+        if (entry.isIntersecting || entry.intersectionRatio > 0) {
           setLeagueUsageVisible(true);
         }
       },
-      { threshold: 0.1, rootMargin: '100px' }
+      { threshold: [0, 0.01, 0.1], rootMargin: '200px 0px' } // Larger rootMargin to trigger earlier
     );
 
     observer.observe(leagueUsageSectionRef.current);
     return () => {
       clearTimeout(timeoutId);
+      clearTimeout(timeoutId2);
       observer.disconnect();
     };
   }, [shotDataLoading]);
@@ -574,32 +578,30 @@ function App() {
       if (!leagueUsageSectionRef.current) return;
       
       const sectionTop = leagueUsageSectionRef.current.offsetTop;
+      const sectionHeight = leagueUsageSectionRef.current.offsetHeight;
       const scrollY = window.scrollY;
       const scrollPastSection = scrollY - sectionTop;
-      const viewportHeight = window.innerHeight;
+      const scrollProgress = scrollPastSection / sectionHeight;
       
-      // Three phases:
-      // Phase 1: 0-150vh - Zoomed out (25-40%), animate left to right
-      // Phase 2: 150vh-300vh - Zoomed out (25-40%), highlight outliers
-      // Phase 3: 300vh-450vh - Zoom into 2010+
-      
-      const phase1End = viewportHeight * 1.5; // 150vh
-      const phase2End = viewportHeight * 3.0; // 300vh
-      const phase3End = viewportHeight * 4.5; // 450vh
+      // Three phases aligned with standardized text box scrollRanges:
+      // Phase 1 (Main): 0-25% - Zoomed out, animate left to right
+      // Phase 2 (Outliers): 25-50% - Zoomed out, highlight outliers
+      // Phase 3 (Modern Era): 50-75% - Zoom into 2010+
+      // Graph viewing: 75%+ - viewing without text
       
       let progress = 0;
       
-      if (scrollPastSection < phase1End) {
+      if (scrollProgress < 0.25) {
         // Phase 1: Zoomed out, animate left to right
-        progress = scrollPastSection / phase1End; // 0 to 1
-      } else if (scrollPastSection < phase2End) {
+        progress = scrollProgress / 0.25; // 0 to 1
+      } else if (scrollProgress < 0.50) {
         // Phase 2: Zoomed out, show outliers
-        progress = 1 + (scrollPastSection - phase1End) / (phase2End - phase1End); // 1 to 2
-      } else if (scrollPastSection < phase3End) {
+        progress = 1 + (scrollProgress - 0.25) / 0.25; // 1 to 2
+      } else if (scrollProgress < 0.75) {
         // Phase 3: Post-2010 zoom
-        progress = 2 + (scrollPastSection - phase2End) / (phase3End - phase2End); // 2 to 3
+        progress = 2 + (scrollProgress - 0.50) / 0.25; // 2 to 3
       } else {
-        progress = 3; // Past all phases
+        progress = 3; // Past all phases - viewing graph without text
       }
       
       setLeagueUsageScrollProgress(progress);
@@ -629,6 +631,26 @@ function App() {
     if (!separatedSectionRef.current) {
       console.log('⚠️ separatedSectionRef is null');
       return;
+    }
+
+    // Force reflow on mobile Safari to ensure sticky positioning initializes correctly
+    // This is needed because conditionally rendered elements may not initialize sticky correctly
+    if (window.innerWidth < 768 && separatedStickyRef.current) {
+      const stickyEl = separatedStickyRef.current;
+      // Force a reflow by reading layout properties
+      void stickyEl.offsetHeight;
+      // Trigger a repaint
+      requestAnimationFrame(() => {
+        if (stickyEl) {
+          // Force browser to recalculate sticky positioning
+          stickyEl.style.transform = 'translateZ(0)';
+          requestAnimationFrame(() => {
+            if (stickyEl) {
+              stickyEl.style.transform = '';
+            }
+          });
+        }
+      });
     }
 
     // Check if already visible
@@ -679,6 +701,91 @@ function App() {
   }, [showSeparated, shotDataLoading]);
 
   /* -------------------------------
+     ATTACH REFS TO INDIVIDUAL METRIC CHARTS
+  --------------------------------*/
+  useEffect(() => {
+    if (!separatedSectionRef.current || !separatedVisible) return;
+
+    // Retry logic to ensure refs are attached (especially on mobile with stacked charts)
+    const attachRefs = () => {
+      const metrics = separatedSectionRef.current?.querySelectorAll("[data-metric]");
+      if (metrics && metrics.length >= 2) {
+        firstMetricRef.current = metrics[0];
+        secondMetricRef.current = metrics[1];
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/360cd766-cf64-4843-be3b-aeff7b6bb854',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:687',message:'Metric refs attached',data:{metricsCount:metrics.length,firstMetricRect:metrics[0].getBoundingClientRect(),secondMetricRect:metrics[1].getBoundingClientRect()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediately
+    if (!attachRefs()) {
+      // Retry after a delay if not found (charts might still be rendering)
+      const timeoutId = setTimeout(() => {
+        attachRefs();
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [separatedVisible]);
+
+  /* -------------------------------
+     SCROLL TRACKING FOR STICKY BEHAVIOR
+  --------------------------------*/
+  useEffect(() => {
+    if (!showSeparated || !separatedSectionRef.current || !separatedStickyRef.current) return;
+
+    let lastScrollY = window.scrollY;
+    let scrollTimeout = null;
+
+    const handleScroll = () => {
+      if (scrollTimeout) return;
+      
+      scrollTimeout = setTimeout(() => {
+        const scrollY = window.scrollY;
+        const sectionEl = separatedSectionRef.current;
+        const stickyEl = separatedStickyRef.current;
+        if (!sectionEl || !stickyEl) return;
+
+        const sectionRect = sectionEl.getBoundingClientRect();
+        const stickyRect = stickyEl.getBoundingClientRect();
+        const stickyStyle = window.getComputedStyle(stickyEl);
+        const sectionTop = sectionEl.offsetTop;
+        const scrollPastSection = scrollY - sectionTop;
+        const sectionMinHeight = parseFloat(sectionEl.style.minHeight || '250vh') * window.innerHeight / 100;
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/360cd766-cf64-4843-be3b-aeff7b6bb854',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:scroll',message:'Scroll event - checking sticky behavior',data:{scrollY,scrollDelta:scrollY-lastScrollY,sectionTop,scrollPastSection,sectionHeight,sectionMinHeight,stickyRectTop:stickyRect.top,stickyRectBottom:stickyRect.bottom,sectionRectTop:sectionRect.top,sectionRectBottom:sectionRect.bottom,stickyPosition:stickyStyle.position,windowHeight:window.innerHeight,shouldBeSticky:scrollPastSection>=0&&scrollPastSection<sectionHeight,isSticking:stickyRect.top<=0.1,stickyShouldStay:sectionRect.bottom>window.innerHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        lastScrollY = scrollY;
+        scrollTimeout = null;
+      }, 50);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+    };
+  }, [showSeparated]);
+
+
+  /* -------------------------------
+     SEPARATED CHARTS TEXT VISIBILITY
+  --------------------------------*/
+  useEffect(() => {
+    // Simply set showSeparatedText to true when section is shown
+    // FloatingTextBox handles all scroll-based visibility via scrollRange
+    if (showSeparated) {
+      setShowSeparatedText(true);
+    }
+  }, [showSeparated]);
+
+  /* -------------------------------
      TEXT BOX VISIBILITY TRACKING
   --------------------------------*/
   // Track when text boxes should show based on state changes
@@ -705,11 +812,6 @@ function App() {
     }
   }, [chartVisible, textBoxShown.ftPercent]);
 
-  useEffect(() => {
-    if (separatedVisible && !textBoxShown.separated) {
-      setTextBoxShown(prev => ({ ...prev, separated: true }));
-    }
-  }, [separatedVisible, textBoxShown.separated]);
 
   useEffect(() => {
     if (leagueUsageVisible && !textBoxShown.leagueUsage) {
@@ -717,10 +819,10 @@ function App() {
     }
   }, [leagueUsageVisible, textBoxShown.leagueUsage]);
 
-  // Outliers highlighted when progress is between 1 and 2
+  // Outliers highlighted when progress is between 1 and 2 (25-50% of section)
   const showLeagueUsageOutliers = leagueUsageScrollProgress >= 1 && leagueUsageScrollProgress < 2;
   
-  // Zoom in when progress is between 2 and 3
+  // Zoom in when progress is between 2 and 3 (50-75% of section)
   const showLeagueUsageZoom = leagueUsageScrollProgress >= 2 && leagueUsageScrollProgress < 3;
 
   useEffect(() => {
@@ -841,6 +943,7 @@ function App() {
           isVisible={textBoxShown.lollipop} 
           sectionRef={lollipopSectionRef}
           scrollPosition={scrollY}
+          scrollRange={[0, 0.40]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             The Anomaly
@@ -898,13 +1001,12 @@ function App() {
         <div className="h-[450vh]" />
 
         {/* Floating Text Boxes for Dual Axis Chart - Sequential behavior */}
-        {/* Main text box: 0-35% of section scroll (longer range for slower scroll) */}
+        {/* Main text box: 0-20% of section scroll */}
         <FloatingTextBox 
           isVisible={textBoxShown.dualAxis} 
           sectionRef={dualAxisSectionRef}
           scrollPosition={scrollY}
-          scrollRange={[0, 0.35]}
-          stayCentered={false}
+          scrollRange={[0, 0.20]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             The Pace Theory
@@ -915,13 +1017,12 @@ function App() {
           </p>
         </FloatingTextBox>
 
-        {/* Era 1: 30-50% of section scroll (fades in as main fades out, scrolls away) */}
+        {/* Era 1: 20-40% of section scroll */}
         <FloatingTextBox 
           isVisible={showDualAxisEra1} 
           sectionRef={dualAxisSectionRef}
           scrollPosition={scrollY}
-          scrollRange={[0.30, 0.50]}
-          stayCentered={false}
+          scrollRange={[0.20, 0.40]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             Early Modern / Fast-Break Era (1979-1989)
@@ -932,13 +1033,12 @@ function App() {
           </p>
         </FloatingTextBox>
 
-        {/* Era 2: 45-65% of section scroll (fades in as era 1 fades out, scrolls away) */}
+        {/* Era 2: 40-60% of section scroll */}
         <FloatingTextBox 
           isVisible={showDualAxisEra2} 
           sectionRef={dualAxisSectionRef}
           scrollPosition={scrollY}
-          scrollRange={[0.45, 0.65]}
-          stayCentered={false}
+          scrollRange={[0.40, 0.60]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             Deadball Era (1997-2004)
@@ -949,13 +1049,12 @@ function App() {
           </p>
         </FloatingTextBox>
 
-        {/* Era 3: 55-75% of section scroll (starts in center, scrolls away) */}
+        {/* Era 3: 60-80% of section scroll */}
         <FloatingTextBox 
           isVisible={showDualAxisEra3} 
           sectionRef={dualAxisSectionRef}
           scrollPosition={scrollY}
-          scrollRange={[0.55, 0.75]}
-          stayCentered={false}
+          scrollRange={[0.60, 0.80]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             Three-Point Revolution (2013-2019)
@@ -1013,6 +1112,7 @@ function App() {
           isVisible={textBoxShown.ftPercent} 
           sectionRef={chartSectionRef}
           scrollPosition={scrollY}
+          scrollRange={[0, 0.40]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             The Rules Theory
@@ -1032,11 +1132,55 @@ function App() {
       =============================== */}
       {showSeparated && (
         <section
-          ref={separatedSectionRef}
-          className="relative min-h-screen pt-16 md:pt-24"
+          ref={(el) => {
+            separatedSectionRef.current = el;
+            // #region agent log
+            if (el) {
+              setTimeout(() => {
+                const sectionStyle = window.getComputedStyle(el);
+                const sectionRect = el.getBoundingClientRect();
+                const parent = el.parentElement;
+                const parentStyle = parent ? window.getComputedStyle(parent) : null;
+                fetch('http://127.0.0.1:7242/ingest/360cd766-cf64-4843-be3b-aeff7b6bb854',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:1092',message:'Section rendered - checking dimensions and parent styles',data:{sectionHeight:sectionRect.height,sectionMinHeight:sectionStyle.minHeight,sectionOverflow:sectionStyle.overflow,sectionPosition:sectionStyle.position,sectionTop:sectionRect.top,parentOverflow:parentStyle?.overflow,parentPosition:parentStyle?.position,parentTransform:parentStyle?.transform,windowScrollY:window.scrollY},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix2',hypothesisId:'B'})}).catch(()=>{});
+              }, 100);
+            }
+            // #endregion
+          }}
+          className="relative pt-16 md:pt-24"
+          style={{ 
+            height: '250vh', // Fixed height (not minHeight) to ensure proper sticky containing block on mobile Safari
+          }}
         >
-          {/* Sticky chart */}
-          <div className="sticky top-0 h-screen flex items-center justify-center z-10">
+          {/* Sticky chart - keeps charts static during scroll */}
+          <div 
+            ref={(el) => {
+              separatedStickyRef.current = el;
+              // #region agent log
+              if (el) {
+                const stickyEl = el;
+                const sectionEl = separatedSectionRef.current;
+                setTimeout(() => {
+                  if (stickyEl && sectionEl) {
+                    const stickyStyle = window.getComputedStyle(stickyEl);
+                    const sectionStyle = window.getComputedStyle(sectionEl);
+                    const stickyRect = stickyEl.getBoundingClientRect();
+                    const sectionRect = sectionEl.getBoundingClientRect();
+                    const mainEl = stickyEl.closest('main');
+                    const mainStyle = mainEl ? window.getComputedStyle(mainEl) : null;
+                    fetch('http://127.0.0.1:7242/ingest/360cd766-cf64-4843-be3b-aeff7b6bb854',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:1102',message:'Sticky element mounted - checking styles and dimensions',data:{stickyPosition:stickyStyle.position,stickyTop:stickyStyle.top,stickyZIndex:stickyStyle.zIndex,sectionHeight:sectionRect.height,sectionMinHeight:sectionStyle.minHeight,sectionOverflow:sectionStyle.overflow,sectionPosition:sectionStyle.position,mainOverflow:mainStyle?.overflow,mainPosition:mainStyle?.position,stickyRectTop:stickyRect.top,stickyRectHeight:stickyRect.height,windowHeight:window.innerWidth,isMobile:window.innerWidth<768},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                  }
+                }, 100);
+              }
+              // #endregion
+            }}
+            className="sticky top-0 flex items-center justify-center z-10"
+            style={{
+              position: 'sticky',
+              top: 0,
+              height: 'auto', // Auto height to accommodate content (especially stacked charts on mobile)
+              minHeight: '100vh', // Ensure minimum viewport height
+            }}
+          >
             <div className="w-full px-8 py-8">
               <div className="text-center mb-12 md:mb-16">
                 <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
@@ -1063,11 +1207,12 @@ function App() {
           {/* Spacer to allow scrolling past sticky chart */}
           <div className="h-[150vh]" />
 
-          {/* Floating Text Box */}
+          {/* Floating Text Box - appears when first chart is visible, disappears before second chart */}
           <FloatingTextBox 
-            isVisible={textBoxShown.separated} 
+            isVisible={showSeparatedText} 
             sectionRef={separatedSectionRef}
             scrollPosition={scrollY}
+            scrollRange={[0, 0.40]}
           >
             <h3 className="text-2xl font-semibold mb-3">
               The Skill Improvement
@@ -1123,12 +1268,12 @@ function App() {
         <div className="h-[450vh]" />
 
         {/* Floating Text Boxes for League Usage Chart - Sequential behavior */}
-        {/* Concentration: 0-30% of section scroll (scrolls away) */}
+        {/* Main: 0-25% of section scroll */}
         <FloatingTextBox 
           isVisible={textBoxShown.leagueUsage} 
           sectionRef={leagueUsageSectionRef}
           scrollPosition={scrollY}
-          scrollRange={[0, 0.30]}
+          scrollRange={[0, 0.25]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             The Heliocentric Theory
@@ -1141,13 +1286,12 @@ function App() {
           </p>
         </FloatingTextBox>
 
-        {/* Outliers: 30-55% of section scroll (starts in center, scrolls away before Modern Era) */}
+        {/* Outliers: 25-50% of section scroll */}
         <FloatingTextBox 
           isVisible={showLeagueUsageOutliers} 
           sectionRef={leagueUsageSectionRef}
           scrollPosition={scrollY}
-          scrollRange={[0.30, 0.55]}
-          stayCentered={false}
+          scrollRange={[0.25, 0.50]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             Highlighting Outliers
@@ -1158,13 +1302,12 @@ function App() {
           </p>
         </FloatingTextBox>
 
-        {/* Modern Era: 50-85% of section scroll (starts in center, scrolls away) */}
+        {/* Modern Era: 50-75% of section scroll */}
         <FloatingTextBox 
           isVisible={showLeagueUsageZoom} 
           sectionRef={leagueUsageSectionRef}
           scrollPosition={scrollY}
-          scrollRange={[0.50, 0.85]}
-          stayCentered={false}
+          scrollRange={[0.50, 0.75]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             The Modern Era (2010+)
@@ -1196,13 +1339,16 @@ function App() {
 
             <div className="flex justify-center mt-4 md:mt-6">
               {shotDataLoading ? (
-                <div className="flex items-center justify-center" style={{ width: Math.min(window.innerWidth - 80, 1000), height: 600 }}>
+                <div className="flex items-center justify-center" style={{ 
+                  width: Math.min(window.innerWidth - 80, 1000), 
+                  height: window.innerWidth < 768 ? Math.max(600, window.innerHeight * 0.7) : 600 
+                }}>
                   <p className="text-gray-600">Loading shot data...</p>
                 </div>
               ) : (
                 <ShotHeatMapArcGIS
                   width={Math.min(window.innerWidth - 80, 1000)}
-                  height={600}
+                  height={window.innerWidth < 768 ? Math.max(600, window.innerHeight * 0.7) : 600}
                   isVisible={true}
                   season="2004"
                   shotData={shotData}
@@ -1220,6 +1366,7 @@ function App() {
           isVisible={textBoxShown.shotHeatmap} 
           sectionRef={shotHeatmapSectionRef}
           scrollPosition={scrollY}
+          scrollRange={[0, 0.40]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             Solving the Geometry
@@ -1276,6 +1423,7 @@ function App() {
           isVisible={textBoxShown.normalizedOffense} 
           sectionRef={normalizedOffenseSectionRef}
           scrollPosition={scrollY}
+          scrollRange={[0, 0.40]}
         >
           <h3 className="text-2xl font-semibold mb-3">
             The Resolution

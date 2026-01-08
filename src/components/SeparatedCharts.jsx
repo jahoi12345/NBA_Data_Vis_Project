@@ -22,7 +22,8 @@ function SingleMetricChart({
   title,
   separationProgress,
   chartIndex,
-  totalCharts
+  totalCharts,
+  isMobile
 }) {
   const {
     tooltipData,
@@ -37,8 +38,11 @@ function SingleMetricChart({
   const [pathLength, setPathLength] = useState(0);
   const [lineProgress, setLineProgress] = useState(0);
 
+  // Calculate actual chart width - use full available width on mobile
+  const actualChartWidth = isMobile ? (width - 32) : chartWidth; // Full width minus padding on mobile
+  
   // Bounds
-  const xMax = chartWidth - margin.left - margin.right;
+  const xMax = actualChartWidth - margin.left - margin.right;
   const yMax = height - margin.top - margin.bottom;
 
   // Scales for separated chart
@@ -141,17 +145,26 @@ function SingleMetricChart({
 
   return (
     <div 
-      className="relative" 
+      className="relative w-full md:w-auto" 
       style={{ 
-        width: `${chartWidth}px`,
-        opacity: separationProgress
+        width: isMobile ? '100%' : (chartWidth ? `${chartWidth}px` : '100%'), // Full width on mobile
+        maxWidth: '100%',
+        opacity: separationProgress,
+        marginBottom: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        zIndex: 1,
+        isolation: 'isolate' // Create new stacking context to prevent overlap
       }}
     >
-      <svg width={chartWidth} height={height} className="overflow-visible" style={{ maxWidth: '100%', height: 'auto' }}>
+      <svg width={actualChartWidth} height={height} className="overflow-visible w-full" style={{ maxWidth: '100%', width: '100%', height: 'auto', display: 'block', position: 'relative', margin: '0 auto' }}>
         <rect
           x={0}
           y={0}
-          width={chartWidth}
+          width={actualChartWidth}
           height={height}
           fill="white"
           rx={8}
@@ -277,7 +290,7 @@ function SingleMetricChart({
               dy: 10,
             })}
             tickFormat={(value) => Math.round(value).toString()}
-            numTicks={width > 400 ? 8 : 5}
+            numTicks={actualChartWidth > 400 ? 8 : 5}
           />
 
           {/* Axis Labels */}
@@ -305,8 +318,16 @@ function SingleMetricChart({
         </g>
       </svg>
 
-      {/* Chart title */}
-      <div className="text-center mt-4">
+      {/* Chart title - positioned below chart with proper spacing, centered */}
+      <div className="text-center mt-4 w-full" style={{ 
+        marginBottom: 0,
+        marginTop: '16px',
+        position: 'relative',
+        zIndex: 1,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
         <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
       </div>
 
@@ -343,17 +364,55 @@ export default function SeparatedCharts({
   isVisible
 }) {
   const [separationProgress, setSeparationProgress] = useState(0);
+  
+  // Use matchMedia for reliable mobile detection
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 767px)').matches;
+  });
+
+  // Track window size for responsive behavior using matchMedia
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    
+    // Set initial value
+    setIsMobile(mediaQuery.matches);
+    
+    // Listen for changes
+    const handleChange = (e) => {
+      setIsMobile(e.matches);
+    };
+    
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+    } else {
+      mediaQuery.addListener(handleChange);
+    }
+    
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleChange);
+      } else {
+        mediaQuery.removeListener(handleChange);
+      }
+    };
+  }, []);
 
   // Filter data to 1999+
   const filteredData = useMemo(() => {
     return data.filter(d => d.year >= 1999);
   }, [data]);
 
-  // Calculate individual chart width - make them larger to fit screen
+  // Calculate individual chart dimensions - responsive based on screen size
   const spacing = 40;
-  const totalSpacing = spacing * 2; // spacing between 3 charts
   const availableWidth = width - (spacing * 2);
-  const chartWidth = Math.floor(availableWidth / 3);
+  // On mobile: full width, on desktop: 1/3 width
+  const chartWidth = isMobile 
+    ? Math.min(window.innerWidth - 32, width - 32) // Maximum width on mobile (account for padding)
+    : Math.floor(availableWidth / 3); // 1/3 width on desktop
+  
+  // On mobile: reduce height to fit 3 charts in viewport; on desktop: use full height
+  const chartHeight = isMobile ? Math.min(280, height * 0.5) : height;
 
   // Animate separation when visible
   useEffect(() => {
@@ -405,29 +464,49 @@ export default function SeparatedCharts({
     return null;
   }
 
+  const metricNames = ['ft', 'fg', 'ts'];
+
   return (
     <div 
-      className="w-full flex justify-center items-start px-4"
+      ref={(el) => {
+        // #region agent log
+        if (el) {
+          setTimeout(() => {
+            const containerRect = el.getBoundingClientRect();
+            const stickyParent = el.closest('.sticky');
+            const stickyRect = stickyParent ? stickyParent.getBoundingClientRect() : null;
+            fetch('http://127.0.0.1:7242/ingest/360cd766-cf64-4843-be3b-aeff7b6bb854',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SeparatedCharts.jsx:436',message:'Charts container dimensions - checking overflow',data:{isMobile,flexDirection:isMobile?'flex-col':'flex-row',containerHeight:containerRect.height,containerWidth:containerRect.width,stickyParentHeight:stickyRect?.height,stickyParentWidth:stickyRect?.width,viewportHeight:window.innerHeight,hasOverflow:containerRect.height>(stickyRect?.height||0),chartCount:3,estimatedContentHeight:isMobile?height*3:height},timestamp:Date.now(),sessionId:'debug-session',runId:'diagnosis',hypothesisId:'F'})}).catch(()=>{});
+          }, 200);
+        }
+        // #endregion
+      }}
+      className="w-full px-4 flex flex-col md:flex-row items-center justify-center"
       style={{
         opacity: separationProgress > 0 ? 1 : 0,
-        gap: `${spacing}px`
+        gap: isMobile ? '24px' : `${spacing}px`
       }}
     >
       {chartConfigs.map((config, index) => (
-        <SingleMetricChart
-          key={index}
-          data={filteredData}
-          width={width}
-          chartWidth={chartWidth}
-          height={height}
-          margin={defaultMargin}
-          getValue={config.getValue}
-          color={config.color}
-          title={config.title}
-          separationProgress={separationProgress}
-          chartIndex={index}
-          totalCharts={3}
-        />
+        <div 
+          key={index} 
+          data-metric={metricNames[index]} 
+          className="w-full md:w-auto flex justify-center items-center flex-shrink-0"
+        >
+          <SingleMetricChart
+            data={filteredData}
+            width={width}
+            chartWidth={chartWidth}
+            height={chartHeight}
+            margin={defaultMargin}
+            getValue={config.getValue}
+            color={config.color}
+            title={config.title}
+            separationProgress={separationProgress}
+            chartIndex={index}
+            totalCharts={3}
+            isMobile={isMobile}
+          />
+        </div>
       ))}
     </div>
   );

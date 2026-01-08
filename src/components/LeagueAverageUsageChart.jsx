@@ -253,35 +253,55 @@ export default function LeagueAverageUsageChart({
     }
   }, [pathString]);
 
-  // Animate when visible or when zoom state changes to post-2010 (but not when switching to outliers)
+  // Track which zoom states have been animated to prevent re-triggering
+  const animatedZoomStatesRef = useRef(new Set());
+  // Track if animation is currently running
+  const isAnimatingRef = useRef(false);
+
+  // Animate when visible
   useEffect(() => {
-    const shouldAnimate = isVisible && data.length > 0;
-    const zoomStateChanged = prevZoomStateRef.current !== zoomState;
-    // Only trigger animation on initial load or when switching to post-2010, not when switching to outliers
-    const isSwitchingToOutliers = zoomState === 'zoomed-out-outliers' && prevZoomStateRef.current === 'zoomed-out-animate';
-    const shouldTriggerAnimation = shouldAnimate && (zoomStateChanged || !prevZoomStateRef.current) && !isSwitchingToOutliers;
-    
-    if (shouldTriggerAnimation) {
-      prevZoomStateRef.current = zoomState;
-      
-      // Reset states
-      setContainerOpacity(1);
+    if (!isVisible || data.length === 0) {
+      // Not visible - hide everything and reset animation tracking
+      setContainerOpacity(0);
       setLineProgress(0);
       setRevealProgress(0);
+      animatedZoomStatesRef.current.clear();
+      prevZoomStateRef.current = null;
+      isAnimatingRef.current = false;
+      return;
+    }
+    
+    // Chart is visible with data - ensure container is shown
+    setContainerOpacity(1);
+    
+    const isSwitchingToOutliers = zoomState === 'zoomed-out-outliers' && prevZoomStateRef.current === 'zoomed-out-animate';
+    
+    // Check if this specific zoom state has already been animated
+    const alreadyAnimatedThisState = animatedZoomStatesRef.current.has(zoomState);
+    
+    // Determine if we should run the full animation
+    // Animate when entering a new zoom state that hasn't been animated yet
+    // Only animate for zoomed-out-animate and post-2010 states
+    const shouldAnimate = !alreadyAnimatedThisState && 
+      !isAnimatingRef.current &&
+      (zoomState === 'zoomed-out-animate' || zoomState === 'post-2010') && 
+      !isSwitchingToOutliers;
+    
+    // Update prevZoomStateRef
+    prevZoomStateRef.current = zoomState;
+    
+    if (shouldAnimate) {
+      // Mark this zoom state as animated and set animating flag
+      animatedZoomStatesRef.current.add(zoomState);
+      isAnimatingRef.current = true;
       
       // Cancel any existing animations
-      if (containerAnimationRef.current) {
-        cancelAnimationFrame(containerAnimationRef.current);
-      }
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (revealAnimationRef.current) {
-        cancelAnimationFrame(revealAnimationRef.current);
-      }
+      if (containerAnimationRef.current) cancelAnimationFrame(containerAnimationRef.current);
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (revealAnimationRef.current) cancelAnimationFrame(revealAnimationRef.current);
       
-      // Animate left-to-right reveal - DOUBLE SPEED AGAIN (0.75 seconds)
-      const revealDuration = 750; // 0.75 seconds for left-to-right (doubled speed again)
+      // Animate left-to-right reveal
+      const revealDuration = 750;
       const revealStartTime = Date.now();
       
       const animateReveal = () => {
@@ -299,13 +319,14 @@ export default function LeagueAverageUsageChart({
           
           const animateLine = () => {
             const lineElapsed = Date.now() - lineStartTime;
-            const lineProgress = Math.min(lineElapsed / lineDuration, 1);
-            setLineProgress(lineProgress);
+            const lineProg = Math.min(lineElapsed / lineDuration, 1);
+            setLineProgress(lineProg);
             
-            if (lineProgress < 1) {
+            if (lineProg < 1) {
               animationRef.current = requestAnimationFrame(animateLine);
             } else {
               setLineProgress(1);
+              isAnimatingRef.current = false;
             }
           };
           
@@ -313,27 +334,24 @@ export default function LeagueAverageUsageChart({
         }
       };
       
+      // Start animation immediately
       revealAnimationRef.current = requestAnimationFrame(animateReveal);
       
       return () => {
-        if (containerAnimationRef.current) {
-          cancelAnimationFrame(containerAnimationRef.current);
-        }
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-        if (revealAnimationRef.current) {
-          cancelAnimationFrame(revealAnimationRef.current);
-        }
+        if (containerAnimationRef.current) cancelAnimationFrame(containerAnimationRef.current);
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        if (revealAnimationRef.current) cancelAnimationFrame(revealAnimationRef.current);
       };
-    } else if (!isVisible) {
-      setContainerOpacity(0);
-      setLineProgress(0);
-      setRevealProgress(0);
-    } else if (isSwitchingToOutliers) {
-      // When switching to outliers, just update the zoom state without re-animating
-      prevZoomStateRef.current = zoomState;
+    } else if (!isAnimatingRef.current) {
+      // Not animating and no animation running - ensure chart is fully visible
+      // This handles: switching to outliers, or returning to a previously animated state
+      setRevealProgress(1);
+      setLineProgress(1);
+      
+      // Mark current state as "animated"
+      animatedZoomStatesRef.current.add(zoomState);
     }
+    // If isAnimatingRef.current is true, let the animation continue
   }, [isVisible, data.length, zoomState]);
 
   // Handle mouse events - FIXED crosshair for scaleBand

@@ -26,6 +26,39 @@ export default function ShotHeatMapArcGIS({
   const featureLayerRef = useRef(null);
   const arcGISModulesRef = useRef(null); // Store ArcGIS modules for reuse
   const seasonStatisticsRef = useRef(null); // Store pre-calculated statistics per season
+  // Use matchMedia for reliable mobile detection
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 767px)').matches;
+  });
+
+  // Track window size for responsive behavior using matchMedia
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    
+    // Set initial value
+    setIsMobile(mediaQuery.matches);
+    
+    // Listen for changes
+    const handleChange = (e) => {
+      setIsMobile(e.matches);
+    };
+    
+    // Use addEventListener for modern browsers, addListener for older ones
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+    } else {
+      mediaQuery.addListener(handleChange);
+    }
+    
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleChange);
+      } else {
+        mediaQuery.removeListener(handleChange);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     console.log('🔥 ShotHeatMapArcGIS: useEffect[isVisible, shotData] triggered', {
@@ -178,13 +211,15 @@ export default function ShotHeatMapArcGIS({
             ];
             
             // Search in view container
-            selectors.forEach(selector => {
-              const elements = view.container.querySelectorAll(selector);
-              elements.forEach(el => {
-                el.style.display = 'none';
-                el.style.visibility = 'hidden';
+            if (view.container) {
+              selectors.forEach(selector => {
+                const elements = view.container.querySelectorAll(selector);
+                elements.forEach(el => {
+                  el.style.display = 'none';
+                  el.style.visibility = 'hidden';
+                });
               });
-            });
+            }
             
             // Also search in parent container if it exists
             if (containerRef.current && containerRef.current.parentElement) {
@@ -209,7 +244,9 @@ export default function ShotHeatMapArcGIS({
             hideUIElements();
           });
           
-          observer.observe(view.container, { childList: true, subtree: true });
+          if (view.container) {
+            observer.observe(view.container, { childList: true, subtree: true });
+          }
           
           // Also observe the parent container
           if (containerRef.current && containerRef.current.parentElement) {
@@ -369,20 +406,20 @@ export default function ShotHeatMapArcGIS({
     return false;
   };
 
-  // Helper function to create multi-season heat map layer (processes ALL seasons at once)
-  const createMultiSeasonHeatMapLayer = (shots, initialSeason, map, FeatureLayer, SimpleRenderer, ExtrudeSymbol3DLayer, PolygonSymbol3D, tileLayer, featureLayerRef, seasonStatisticsRef) => {
+  // Helper function to create multi-season heat map layer from PRE-AGGREGATED grid data
+  const createMultiSeasonHeatMapLayer = (gridCells, initialSeason, map, FeatureLayer, SimpleRenderer, ExtrudeSymbol3DLayer, PolygonSymbol3D, tileLayer, featureLayerRef, seasonStatisticsRef) => {
     // Remove existing feature layer if it exists
     if (featureLayerRef.current) {
       map.remove(featureLayerRef.current);
       featureLayerRef.current = null;
     }
     
-    if (!shots || shots.length === 0) {
-      console.warn('ShotHeatMapArcGIS: No shot data provided');
+    if (!gridCells || gridCells.length === 0) {
+      console.warn('ShotHeatMapArcGIS: No grid data provided');
       return;
     }
     
-    console.log(`🔥 ShotHeatMapArcGIS: Creating multi-season heatmap with ${shots.length} total shots`);
+    console.log(`🔥 ShotHeatMapArcGIS: Creating multi-season heatmap from ${gridCells.length} pre-aggregated grid cells`);
     
     // Ensure tile layer is loaded before accessing fullExtent
     const processHeatMap = () => {
@@ -393,7 +430,7 @@ export default function ShotHeatMapArcGIS({
         tileLayer.when(() => {
           const extent = tileLayer.fullExtent;
           if (extent) {
-            createMultiSeasonHeatMapLayer(shots, initialSeason, map, FeatureLayer, SimpleRenderer, ExtrudeSymbol3DLayer, PolygonSymbol3D, tileLayer, featureLayerRef, seasonStatisticsRef);
+            createMultiSeasonHeatMapLayer(gridCells, initialSeason, map, FeatureLayer, SimpleRenderer, ExtrudeSymbol3DLayer, PolygonSymbol3D, tileLayer, featureLayerRef, seasonStatisticsRef);
           }
         });
         return;
@@ -408,76 +445,49 @@ export default function ShotHeatMapArcGIS({
       
       // Import Polygon for creating geometry objects
       import('@arcgis/core/geometry/Polygon').then(({ default: Polygon }) => {
-        // Filter shots to half court only (valid coordinates)
-        const validShots = shots.filter(shot => {
-          const validCoords = !isNaN(shot.x) && !isNaN(shot.y) &&
-            shot.x >= -25 && shot.x <= 25 &&
-            shot.y >= 0 && shot.y <= 47;
+        // Filter grid cells to half court only (valid coordinates)
+        const validCells = gridCells.filter(cell => {
+          const validCoords = !isNaN(cell.x) && !isNaN(cell.y) &&
+            cell.x >= -25 && cell.x <= 25 &&
+            cell.y >= 0 && cell.y <= 47 &&
+            cell.count > 0;
           return validCoords;
         });
         
-        console.log(`🔥 ShotHeatMapArcGIS: Filtered to ${validShots.length} valid shots (from ${shots.length} total)`);
+        console.log(`🔥 ShotHeatMapArcGIS: Filtered to ${validCells.length} valid grid cells (from ${gridCells.length} total)`);
         
-        if (validShots.length === 0) {
-          console.warn('ShotHeatMapArcGIS: No valid shots after filtering');
+        if (validCells.length === 0) {
+          console.warn('ShotHeatMapArcGIS: No valid grid cells after filtering');
           return;
         }
         
-        // Define rectangular grid parameters
-        const COURT_X_MIN = -25;
-        const COURT_X_MAX = 25;
-        const COURT_Y_MIN = 0;
-        const COURT_Y_MAX = 47;
-        const BINS_X = 50;
-        const BINS_Y = 47;
-        const BIN_WIDTH = (COURT_X_MAX - COURT_X_MIN) / BINS_X;
-        const BIN_HEIGHT = (COURT_Y_MAX - COURT_Y_MIN) / BINS_Y;
+        // Grid cells are already keyed by x,y coordinates - group by position and season
+        // Structure: Map<binKey, Map<season, count>>
+        const binData = new Map();
+        const seasons = new Set();
         
-        // Create bin grid with ALL seasons
-        // Structure: Map<binKey, Map<season, weightedCount>>
-        const binData = new Map(); // Map<binKey, Map<season, weightedCount>>
-        const seasons = new Set(); // Track all seasons found
+        console.log('🔥 ShotHeatMapArcGIS: Processing pre-aggregated grid cells...');
         
-        console.log('🔥 ShotHeatMapArcGIS: Starting multi-season binning process...');
-        
-        validShots.forEach(shot => {
-          // Extract season from shot
-          const shotSeasonStr = String(shot.season || '').trim();
-          const seasonYear = shotSeasonStr.substring(0, 4); // Get first 4 digits
-          if (seasonYear && seasonYear.length === 4) {
+        validCells.forEach(cell => {
+          const seasonYear = String(cell.season || '').trim();
+          if (seasonYear) {
             seasons.add(seasonYear);
           }
           
-          // Calculate which bin this shot belongs to
-          let binX = Math.floor((shot.x - COURT_X_MIN) / BIN_WIDTH);
-          let binY = Math.floor((shot.y - COURT_Y_MIN) / BIN_HEIGHT);
+          // Use the x,y directly as the bin key (grid data is already binned)
+          const binKey = `${cell.x},${cell.y}`;
           
-          // Handle edge cases
-          if (shot.x >= COURT_X_MAX) binX = BINS_X - 1;
-          if (shot.y >= COURT_Y_MAX) binY = BINS_Y - 1;
-          if (binX >= BINS_X) binX = BINS_X - 1;
-          if (binY >= BINS_Y) binY = BINS_Y - 1;
-          if (binX < 0) binX = 0;
-          if (binY < 0) binY = 0;
-          
-          const binKey = `${binX},${binY}`;
-          
-          // Get or create bin data
           if (!binData.has(binKey)) {
             binData.set(binKey, new Map());
           }
           const binSeasons = binData.get(binKey);
           
-          // Use season year as key, or fallback to full season string
-          const seasonKey = seasonYear || shotSeasonStr;
-          const currentCount = binSeasons.get(seasonKey) || 0;
-          
-          // Increment weighted count: 3PT = 1.5, 2PT = 1.0
-          const weight = shot.isThreePoint ? 1.5 : 1.0;
-          binSeasons.set(seasonKey, currentCount + weight);
+          // Use the count directly from pre-aggregated data
+          const currentCount = binSeasons.get(seasonYear) || 0;
+          binSeasons.set(seasonYear, currentCount + cell.count);
         });
         
-        console.log(`🔥 ShotHeatMapArcGIS: Binning complete. Found ${binData.size} bins with data across ${seasons.size} seasons`);
+        console.log(`🔥 ShotHeatMapArcGIS: Processing complete. Found ${binData.size} unique positions across ${seasons.size} seasons`);
         console.log(`🔥 Seasons found:`, Array.from(seasons).sort());
         
         // Calculate tile dimensions
@@ -524,20 +534,21 @@ export default function ShotHeatMapArcGIS({
         binData.forEach((binSeasons, binKey) => {
           if (binSeasons.size === 0) return;
           
-          // Filter: only include bins with weighted count above threshold for initial season
-          // Try both the normalized year and the original initialSeason format
+          // Filter: only include bins with count above threshold for initial season
           const initialSeasonCount = binSeasons.get(initialSeasonYear) || binSeasons.get(initialSeason) || 0;
           if (initialSeasonCount < volumeThreshold) {
             return; // Skip low-volume bins
           }
           
-          const [binX, binY] = binKey.split(',').map(Number);
+          // Grid data uses actual court coordinates (e.g., x=-1, y=17)
+          // Create a 1x1 foot square around each point
+          const [cellX, cellY] = binKey.split(',').map(Number);
           
-          // Calculate bin boundaries
-          const binXMin = COURT_X_MIN + binX * BIN_WIDTH;
-          const binXMax = binX === BINS_X - 1 ? COURT_X_MAX : COURT_X_MIN + (binX + 1) * BIN_WIDTH;
-          const binYMin = COURT_Y_MIN + binY * BIN_HEIGHT;
-          const binYMax = binY === BINS_Y - 1 ? COURT_Y_MAX : COURT_Y_MIN + (binY + 1) * BIN_HEIGHT;
+          // Create bin boundaries as a 1-foot square around the coordinate
+          const binXMin = cellX - 0.5;
+          const binXMax = cellX + 0.5;
+          const binYMin = cellY - 0.5;
+          const binYMax = cellY + 0.5;
           
           // Create corners and transform
           const corner0 = [binXMin, binYMin];
@@ -1290,84 +1301,129 @@ export default function ShotHeatMapArcGIS({
     };
   }, []);
 
+  // Calculate responsive dimensions
+  const actualWidth = isMobile ? Math.min(width, window.innerWidth - 32) : width;
+  const actualHeight = isMobile ? Math.max(600, Math.min(window.innerHeight * 0.7, 800)) : height;
+  const sliderHeight = isMobile ? 60 : 80; // Reduced slider height on mobile
+  // Legend dimensions: horizontal bar on mobile, vertical bar on desktop
+  // Using explicit pixel values for reliability
+  const legendHeight = isMobile ? 16 : 300;
+  const legendWidth = isMobile ? 180 : 30; // Fixed width for horizontal bar on mobile
+
   return (
-    <div style={{ width, height, backgroundColor: 'white', position: 'relative', margin: '0 auto' }}>
+    <div style={{ 
+      width: actualWidth, 
+      height: actualHeight, 
+      backgroundColor: 'transparent',
+      position: 'relative', 
+      margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
+      zIndex: 0
+    }}>
       <div style={{
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
         justifyContent: 'center',
-        alignItems: 'flex-start',
-        height: 'calc(100% - 80px)',
+        alignItems: isMobile ? 'flex-start' : 'flex-start', // Changed from 'center' to 'flex-start' to prevent extra space
+        height: isMobile ? 'auto' : 'auto',
         position: 'relative',
-        width: '100%'
+        width: '100%',
+        gap: '0', // No gap - legend should be directly under heatmap
+        margin: '0',
+        padding: isMobile ? '0' : '0', // No padding on mobile to maximize heatmap width
+        flex: '1 1 auto'
       }}>
         <div style={{
           position: 'relative',
           width: '100%',
-          maxWidth: '1000px',
-          margin: '0 auto',
-          height: '100%',
+          maxWidth: isMobile ? '100%' : '1000px', // Full width on mobile
+          margin: isMobile ? '0' : '0 auto',
+          height: isMobile ? 'auto' : '100%',
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           justifyContent: 'center',
-          alignItems: 'flex-start'
+          alignItems: isMobile ? 'flex-start' : 'flex-start', // Changed from 'stretch' to prevent forced height
+          gap: '0', // No gap between heatmap and legend
+          marginBottom: '0',
+          paddingBottom: '0',
+          padding: isMobile ? '0' : '0' // No padding on mobile to maximize heatmap width
         }}>
           <div 
             ref={containerRef} 
             style={{ 
-              width: 'calc(100% - 120px)', // Reserve space for legend on the right
-              maxWidth: '880px', // Center the heatmap view
-              height: '100%',
+              width: isMobile ? '100%' : 'calc(100% - 120px)', // Full width on mobile, reserve space for legend on desktop
+              maxWidth: isMobile ? '100%' : '880px', // Full width on mobile
+              height: isMobile ? 'auto' : '100%',
+              minHeight: isMobile ? '400px' : 'auto',
               backgroundColor: 'white',
-              margin: '0 auto'
+              margin: isMobile ? '0' : '0 auto',
+              marginBottom: isMobile ? '-120px' : '-80px', // Negative margin to bring legend and slider closer
+              padding: '0',
+              border: 'none',
+              display: 'block',
+              lineHeight: '0',
+              fontSize: '0',
+              overflow: 'hidden'
             }} 
           />
-          {/* Color Legend on the right side */}
+          {/* Color Legend - horizontal on mobile, vertical on desktop */}
           <div style={{
-            position: 'absolute',
-            top: '20px',
-            right: '10px',
-            width: '100px',
+            position: isMobile ? 'relative' : 'absolute',
+            top: isMobile ? 'auto' : '0',
+            right: isMobile ? 'auto' : '10px',
+            width: isMobile ? '100%' : 'auto', // Auto width on desktop for vertical legend
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: isMobile ? 'column' : 'column', // Column for title above gradient bar
             alignItems: 'center',
-            gap: '8px',
-            zIndex: 10
+            gap: isMobile ? '4px' : '8px', // Tighter gap on mobile
+            zIndex: 10,
+            marginTop: isMobile ? '-80px' : '0', // Less negative margin - moved legend down
+            marginBottom: isMobile ? '-60px' : '0', // Less negative margin
+            padding: isMobile ? '0 5px' : '0'
           }}>
             <div style={{
-              fontSize: '12px',
+              fontSize: isMobile ? '14px' : '12px',
               fontWeight: '600',
               color: '#333',
               marginBottom: '4px'
             }}>
               Shot Density
             </div>
-            {/* Vertical gradient bar with labels */}
+            {/* Horizontal gradient bar on mobile, vertical on desktop */}
             <div style={{
               position: 'relative',
               display: 'flex',
-              flexDirection: 'column',
+              flexDirection: isMobile ? 'row' : 'column',
               alignItems: 'center',
-              gap: '4px'
+              gap: isMobile ? 10 : 8,
+              justifyContent: 'center'
             }}>
               <span style={{ 
-                fontSize: '10px', 
+                fontSize: isMobile ? 12 : 10, 
                 color: '#666', 
-                fontWeight: '600' 
+                fontWeight: '600',
+                whiteSpace: 'nowrap'
               }}>
-                High
+                Low
               </span>
               <div style={{
-                width: '30px',
-                height: '300px',
-                background: 'linear-gradient(to top, rgb(212, 227, 245) 0%, rgb(133, 154, 250) 20%, rgb(62, 90, 253) 40%, rgb(132, 149, 122) 60%, rgb(234, 179, 8) 80%, rgb(255, 255, 0) 100%)',
-                borderRadius: '4px',
+                width: legendWidth,
+                height: legendHeight,
+                background: isMobile 
+                  ? 'linear-gradient(to right, rgb(212, 227, 245) 0%, rgb(133, 154, 250) 20%, rgb(62, 90, 253) 40%, rgb(132, 149, 122) 60%, rgb(234, 179, 8) 80%, rgb(255, 255, 0) 100%)'
+                  : 'linear-gradient(to top, rgb(212, 227, 245) 0%, rgb(133, 154, 250) 20%, rgb(62, 90, 253) 40%, rgb(132, 149, 122) 60%, rgb(234, 179, 8) 80%, rgb(255, 255, 0) 100%)',
+                borderRadius: 4,
                 border: '1px solid #ddd',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }} />
               <span style={{ 
-                fontSize: '10px', 
-                color: '#666' 
+                fontSize: isMobile ? 12 : 10, 
+                color: '#666', 
+                fontWeight: '600',
+                whiteSpace: 'nowrap'
               }}>
-                Low
+                High
               </span>
             </div>
           </div>
@@ -1375,18 +1431,17 @@ export default function ShotHeatMapArcGIS({
       </div>
       {/* Season slider at the bottom */}
       <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '80px',
+        position: 'relative',
+        width: '100%',
+        height: `${sliderHeight}px`,
         backgroundColor: 'white',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '8px 20px',
-        gap: '4px'
+        padding: isMobile ? '0' : '8px 20px',
+        gap: '4px',
+        marginTop: isMobile ? '-140px' : '-80px' // Adjusted for legend position
       }}>
         <Slider
           label={`Season: ${selectedSeason}`}
