@@ -904,30 +904,30 @@ LEAGUE USAGE CHART VISIBILITY
       =============================== */}
       <section
         ref={lollipopSectionRef}
-        className="relative min-h-screen pt-16 md:pt-24"
+        className="relative min-h-screen pt-8 sm:pt-12 md:pt-16 lg:pt-24"
       >
         {/* Sticky chart */}
-        <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8 py-8">
-            <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
+        <div className="sticky top-0 h-screen flex items-start sm:items-center justify-center z-10 overflow-y-auto">
+          <div className="w-full px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8">
+            <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-2 sm:mb-3 md:mb-4 leading-tight">
                 Elite Players Per Season
               </h2>
-              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 mb-4 sm:mb-6 md:mb-8 leading-relaxed">
                 Number of players averaging &gt;25 points (pts), &gt;5 rebounds (reb), and &gt;5 assists (ast) per season (Regular Season only)
               </p>
             </div>
 
             {playerStatsLoading ? (
-              <div className="h-[500px] flex items-center justify-center text-gray-500">
+              <div className="h-[400px] sm:h-[500px] flex items-center justify-center text-gray-500">
                 Processing player statistics...
               </div>
             ) : (
-              <div className="flex justify-center mt-4 md:mt-6">
+              <div className="flex justify-center mt-2 sm:mt-4 md:mt-6">
                 <LollipopChart
                   data={playerStatsData}
-                  width={Math.min(window.innerWidth - 80, 1400)}
-                  height={500}
+                  width={Math.min(window.innerWidth - 32, 1400)}
+                  height={400}
                   isVisible={lollipopVisible}
                 />
               </div>
@@ -960,31 +960,31 @@ LEAGUE USAGE CHART VISIBILITY
       =============================== */}
       <section
         ref={dualAxisSectionRef}
-        className="relative pt-16 md:pt-24"
+        className="relative pt-8 sm:pt-12 md:pt-16 lg:pt-24"
         style={{ minHeight: '550vh' }} // 100vh (sticky element) + 450vh (spacer) = 550vh total
       >
         {/* Sticky chart */}
-        <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8 py-8">
-            <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
+        <div className="sticky top-0 h-screen flex items-start sm:items-center justify-center z-10 overflow-y-auto">
+          <div className="w-full px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8">
+            <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-2 sm:mb-3 md:mb-4 leading-tight">
                 Pace and Offensive Efficiency
               </h2>
-              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 mb-4 sm:mb-6 md:mb-8 leading-relaxed">
                 NBA pace (possessions per game) and points per 100 possessions over time
               </p>
             </div>
 
             {loading ? (
-              <div className="h-[500px] flex items-center justify-center text-gray-500">
+              <div className="h-[400px] sm:h-[500px] flex items-center justify-center text-gray-500">
                 Loading chart data…
               </div>
             ) : (
-              <div className="flex justify-center mt-4 md:mt-6">
+              <div className="flex justify-center mt-2 sm:mt-4 md:mt-6">
               <DualAxisChart
                 data={data}
-                width={Math.min(window.innerWidth - 80, 1400)}
-                height={500}
+                width={Math.min(window.innerWidth - 32, 1400)}
+                height={400}
                 isVisible={dualAxisVisible}
                 activeEraIndex={activeEraIndex}
               />
@@ -1071,30 +1071,30 @@ LEAGUE USAGE CHART VISIBILITY
       =============================== */}
       <section
         ref={chartSectionRef}
-        className="relative min-h-screen pt-16 md:pt-24"
+        className="relative min-h-screen pt-8 sm:pt-12 md:pt-16 lg:pt-24"
       >
         {/* Sticky chart */}
-        <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8 py-8">
-            <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
+        <div className="sticky top-0 h-screen flex items-start sm:items-center justify-center z-10 overflow-y-auto">
+          <div className="w-full px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8">
+            <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-2 sm:mb-3 md:mb-4 leading-tight">
                 League Average Shooting Percentages
               </h2>
-              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 mb-4 sm:mb-6 md:mb-8 leading-relaxed">
                 NBA Free Throw (FT), Field Goal (FG), and True Shooting (TS) percentages by season (1979-80 onward)
               </p>
             </div>
 
             {loading ? (
-              <div className="h-[500px] flex items-center justify-center text-gray-500">
+              <div className="h-[400px] sm:h-[500px] flex items-center justify-center text-gray-500">
                 Loading chart data…
               </div>
             ) : (
-              <div className="flex justify-center mt-4 md:mt-6">
+              <div className="flex justify-center mt-2 sm:mt-4 md:mt-6">
                 <FTPercentChart
                   data={data}
-                  width={Math.min(window.innerWidth - 80, 1400)}
-                  height={500}
+                  width={Math.min(window.innerWidth - 32, 1400)}
+                  height={400}
                   isVisible={chartVisible}
                 />
               </div>
@@ -1146,7 +1146,7 @@ LEAGUE USAGE CHART VISIBILITY
             }
             // #endregion
           }}
-          className="relative pt-16 md:pt-24"
+          className="relative pt-8 sm:pt-12 md:pt-16 lg:pt-24"
           style={{ 
             height: '250vh', // Fixed height (not minHeight) to ensure proper sticky containing block on mobile Safari
           }}
@@ -1173,7 +1173,7 @@ LEAGUE USAGE CHART VISIBILITY
               }
               // #endregion
             }}
-            className="sticky top-0 flex items-center justify-center z-10"
+            className="sticky top-0 flex items-start sm:items-center justify-center z-10 overflow-y-auto"
             style={{
               position: 'sticky',
               top: 0,
@@ -1181,22 +1181,22 @@ LEAGUE USAGE CHART VISIBILITY
               minHeight: '100vh', // Ensure minimum viewport height
             }}
           >
-            <div className="w-full px-8 py-8">
-              <div className="text-center mb-12 md:mb-16">
-                <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
+            <div className="w-full px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8">
+              <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-2 sm:mb-3 md:mb-4 leading-tight">
                   Individual Shooting Metrics
                 </h2>
-                <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
+                <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 mb-4 sm:mb-6 md:mb-8 leading-relaxed">
                   Each metric shown separately (1999-present)
                 </p>
               </div>
 
               {!loading && (
-                <div className="flex justify-center mt-4 md:mt-6">
+                <div className="flex justify-center mt-2 sm:mt-4 md:mt-6">
                   <SeparatedCharts
                     data={data}
-                    width={Math.min(window.innerWidth - 80, 1400)}
-                    height={500}
+                    width={Math.min(window.innerWidth - 32, 1400)}
+                    height={400}
                     isVisible={separatedVisible}
                   />
                 </div>
@@ -1231,31 +1231,31 @@ LEAGUE USAGE CHART VISIBILITY
       =============================== */}
       <section
         ref={leagueUsageSectionRef}
-        className="relative pt-16 md:pt-24"
+        className="relative pt-8 sm:pt-12 md:pt-16 lg:pt-24"
         style={{ minHeight: '450vh' }} // 150vh initial + 150vh zoom out + 150vh post-2010 = 450vh
       >
         {/* Sticky chart */}
-        <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8 py-8">
-            <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
+        <div className="sticky top-0 h-screen flex items-start sm:items-center justify-center z-10 overflow-y-auto">
+          <div className="w-full px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8">
+            <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-2 sm:mb-3 md:mb-4 leading-tight">
                 League Average Usage of Highest Usage Players
               </h2>
-              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 mb-4 sm:mb-6 md:mb-8 leading-relaxed">
                 Average usage percentage of the highest usage player per team, per season
               </p>
             </div>
 
             {usageDataLoading ? (
-              <div className="h-[500px] flex items-center justify-center text-gray-500">
+              <div className="h-[400px] sm:h-[500px] flex items-center justify-center text-gray-500">
                 Loading usage data...
               </div>
             ) : (
-              <div className="flex justify-center mt-4 md:mt-6">
+              <div className="flex justify-center mt-2 sm:mt-4 md:mt-6">
                 <LeagueAverageUsageChart
                   data={usageData.leagueAverage}
-                  width={Math.min(window.innerWidth - 80, 1400)}
-                  height={500}
+                  width={Math.min(window.innerWidth - 32, 1400)}
+                  height={400}
                   isVisible={leagueUsageVisible}
                   scrollProgress={leagueUsageScrollProgress}
                 />
@@ -1324,30 +1324,30 @@ LEAGUE USAGE CHART VISIBILITY
       {/* ===============================
           SHOT HEATMAP SECTION
       =============================== */}
-      <section ref={shotHeatmapSectionRef} className="relative min-h-screen pt-16 md:pt-24">
+      <section ref={shotHeatmapSectionRef} className="relative min-h-screen pt-8 sm:pt-12 md:pt-16 lg:pt-24">
         {/* Sticky chart */}
-        <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8 py-8">
-            <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
+        <div className="sticky top-0 h-screen flex items-start sm:items-center justify-center z-10 overflow-y-auto">
+          <div className="w-full px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8">
+            <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-2 sm:mb-3 md:mb-4 leading-tight">
                 Evolution of NBA Shot Selection
               </h2>
-              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 mb-4 sm:mb-6 md:mb-8 leading-relaxed">
                 Explore how shot locations have changed across two decades (2004-2024). Use the slider to see the shift from post-up dominance to the three-point revolution.
               </p>
             </div>
 
-            <div className="flex justify-center mt-4 md:mt-6">
+            <div className="flex justify-center mt-2 sm:mt-4 md:mt-6">
               {shotDataLoading ? (
                 <div className="flex items-center justify-center" style={{ 
-                  width: Math.min(window.innerWidth - 80, 1000), 
+                  width: Math.min(window.innerWidth - 32, 1000), 
                   height: window.innerWidth < 768 ? Math.max(600, window.innerHeight * 0.7) : 600 
                 }}>
                   <p className="text-gray-600">Loading shot data...</p>
                 </div>
               ) : (
                 <ShotHeatMapArcGIS
-                  width={Math.min(window.innerWidth - 80, 1000)}
+                  width={Math.min(window.innerWidth - 32, 1000)}
                   height={window.innerWidth < 768 ? Math.max(600, window.innerHeight * 0.7) : 600}
                   isVisible={true}
                   season="2004"
@@ -1384,30 +1384,30 @@ LEAGUE USAGE CHART VISIBILITY
       =============================== */}
       <section
         ref={normalizedOffenseSectionRef}
-        className="relative min-h-screen pt-16 md:pt-24"
+        className="relative min-h-screen pt-8 sm:pt-12 md:pt-16 lg:pt-24"
       >
         {/* Sticky chart */}
-        <div className="sticky top-0 h-screen flex items-center justify-center z-10">
-          <div className="w-full px-8 py-8">
-            <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-3xl md:text-4xl font-semibold mb-3 md:mb-4">
+        <div className="sticky top-0 h-screen flex items-start sm:items-center justify-center z-10 overflow-y-auto">
+          <div className="w-full px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8">
+            <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-2 sm:mb-3 md:mb-4 leading-tight">
                 How Offense Has Changed, Relative to Itself
               </h2>
-              <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 mb-4 sm:mb-6 md:mb-8 leading-relaxed">
                 How offensive performance has evolved over time
               </p>
             </div>
 
             {loading ? (
-              <div className="h-[500px] flex items-center justify-center text-gray-500">
+              <div className="h-[400px] sm:h-[500px] flex items-center justify-center text-gray-500">
                 Loading chart data…
               </div>
             ) : (
-              <div className="flex justify-center mt-4 md:mt-6">
+              <div className="flex justify-center mt-2 sm:mt-4 md:mt-6">
                 <NormalizedOffenseChart
                   data={data}
-                  width={Math.min(window.innerWidth - 80, 1400)}
-                  height={500}
+                  width={Math.min(window.innerWidth - 32, 1400)}
+                  height={400}
                   isVisible={normalizedOffenseVisible}
                 />
               </div>
